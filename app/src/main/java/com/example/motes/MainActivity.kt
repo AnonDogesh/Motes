@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.example.motes.navigation.MotesNavHost
+import com.example.motes.navigation.MotesNavGraph
 import com.example.motes.ui.theme.MotesTheme
 
 class MainActivity : ComponentActivity() {
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MotesTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    MotesNavHost()
+                    MotesNavGraph()
                 }
             }
         }

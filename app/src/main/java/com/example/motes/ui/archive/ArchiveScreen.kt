@@ -1,4 +1,4 @@
-package com.example.motes.ui.editor_drawing
+package com.example.motes.ui.archive
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,21 +9,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun DrawingEditorScreen(
-    onBack: () -> Boolean,
-    viewModel: DrawingEditorViewModel = viewModel()
-) {
+fun ArchiveScreen(onBack: () -> Boolean) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Drawing Editor")
-        Text("ID: ${viewModel.drawingId ?: "new"}")
+        Text("Archive")
         Button(onClick = { onBack() }) {
             Text("Back")
         }
