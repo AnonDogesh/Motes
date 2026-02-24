@@ -2,25 +2,31 @@ package com.example.motes.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val LightColors = lightColorScheme(
-    primary = md_theme_light_primary
-)
-
-private val DarkColors = darkColorScheme(
-    primary = md_theme_dark_primary
+private val MotesDarkColorScheme = darkColorScheme(
+    primary = Accent,
+    onPrimary = PrimaryBackground,
+    background = PrimaryBackground,
+    onBackground = TextPrimary,
+    surface = SurfaceLow,
+    onSurface = TextPrimary,
+    surfaceVariant = SurfaceMedium,
+    onSurfaceVariant = TextSecondary,
+    outline = BorderSubtle,
+    tertiary = SurfaceHigh
 )
 
 @Composable
 fun MotesTheme(
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    // Dark-first design system: app defaults to the custom dark palette.
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = Typography,
+        colorScheme = MotesDarkColorScheme,
+        typography = AppTypography,
+        shapes = AppShapes,
         content = content
     )
 }
