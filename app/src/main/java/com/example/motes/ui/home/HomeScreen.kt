@@ -57,6 +57,7 @@ fun HomeScreen(
     val inSelectionMode = selectionMode != null
 
     val pinnedItems = remember(uiState.items) { uiState.items.filter { it.isPinned } }
+    val allItems = remember(uiState.items) { uiState.items.filterNot { it.isPinned } }
 
     BackHandler(enabled = inSelectionMode) {
         viewModel.clearSelection()
@@ -106,7 +107,7 @@ fun HomeScreen(
                 stickyHeader(key = "pinned_header", span = fullLineSpan()) {
                     SectionHeader(title = "Pinned")
                 }
-                items(items = pinnedItems, key = { it.id }) { note ->
+                items(items = pinnedItems, key = { "pinned_${it.id}" }) { note ->
                     NoteCard(
                         note = note,
                         isSelected = selectedIds.contains(note.id),
@@ -119,7 +120,7 @@ fun HomeScreen(
             stickyHeader(key = "all_header", span = fullLineSpan()) {
                 SectionHeader(title = "All Notes")
             }
-            items(items = uiState.items, key = { it.id }) { note ->
+            items(items = allItems, key = { "all_${it.id}" }) { note ->
                 NoteCard(
                     note = note,
                     isSelected = selectedIds.contains(note.id),

@@ -1,6 +1,5 @@
 package com.example.motes.ui.archive
 
-import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,21 +33,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.Room
-import com.example.motes.data.AppDatabase
-import com.example.motes.data.repository.DefaultNoteRepository
+import com.example.motes.data.AppContainer
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArchiveScreen(onBack: () -> Boolean) {
     val context = LocalContext.current
-    val appContext = context.applicationContext
-
-    val db = remember(appContext) { provideDatabase(appContext) }
-    val noteRepository = remember(db) { DefaultNoteRepository(db.noteDao()) }
-    val archiveViewModel: ArchiveViewModel = viewModel(
-        factory = ArchiveViewModelFactory(noteRepository)
-    )
+    val noteRepository = remember(context) { AppContainer.noteRepository(context) }
+    val factory = remember(noteRepository) { ArchiveViewModelFactory(noteRepository) }
+    val archiveViewModel: ArchiveViewModel = viewModel(factory = factory)
 
     val uiState by archiveViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -107,9 +100,6 @@ fun ArchiveScreen(onBack: () -> Boolean) {
         }
     }
 }
-
-private fun provideDatabase(context: Context): AppDatabase =
-    Room.databaseBuilder(context, AppDatabase::class.java, "motes.db").build()
 
 private fun fullLineSpan(): (LazyGridItemSpanScope) -> GridItemSpan = {
     GridItemSpan(maxLineSpan)

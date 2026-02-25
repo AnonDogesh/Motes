@@ -51,7 +51,8 @@ fun ChecklistEditorScreen(
     viewModel: ChecklistEditorViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var newItemText by rememberSaveable { mutableStateOf("") }
+    val checklistKey = uiState.checklistId ?: "new"
+    var newItemText by rememberSaveable(checklistKey) { mutableStateOf("") }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
