@@ -45,6 +45,7 @@ import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.SurfaceHigh
 import com.example.motes.ui.theme.SurfaceMedium
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChecklistEditorScreen(
     onBack: () -> Boolean,

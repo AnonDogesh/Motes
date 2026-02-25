@@ -17,7 +17,7 @@ import com.example.motes.data.entity.NoteEntity
         DrawingEntity::class
     ],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(AppTypeConverters::class)
 abstract class AppDatabase : RoomDatabase() {
