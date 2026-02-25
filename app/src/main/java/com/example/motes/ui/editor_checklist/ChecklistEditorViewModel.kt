@@ -5,6 +5,5 @@ import androidx.lifecycle.ViewModel
 import com.example.motes.navigation.AppRoute
 
 class ChecklistEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
-    val checklistId: String? = savedStateHandle.get<String>(AppRoute.ChecklistEditor.ARG_ID)
-        ?.takeIf { it.isNotBlank() }
+    val checklistId: String? = AppRoute.ChecklistEditor.from(savedStateHandle)?.checklistId
 }
