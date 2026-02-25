@@ -11,4 +11,6 @@ interface NoteRepository {
 
     suspend fun upsert(note: NoteEntity)
     suspend fun delete(note: NoteEntity)
+    suspend fun restore(id: String)
+    suspend fun deletePermanently(id: String)
 }

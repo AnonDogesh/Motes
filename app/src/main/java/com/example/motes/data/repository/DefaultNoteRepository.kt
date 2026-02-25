@@ -22,4 +22,12 @@ class DefaultNoteRepository(
     override suspend fun delete(note: NoteEntity) {
         noteDao.delete(note)
     }
+
+    override suspend fun restore(id: String) {
+        noteDao.setArchived(id = id, archived = false, updatedAt = System.currentTimeMillis())
+    }
+
+    override suspend fun deletePermanently(id: String) {
+        noteDao.deleteById(id)
+    }
 }

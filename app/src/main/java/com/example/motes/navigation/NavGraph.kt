@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.motes.ui.home.HomeScreen
 import com.example.motes.ui.editor_checklist.ChecklistEditorScreen
 import com.example.motes.ui.editor_drawing.DrawingEditorScreen
+import com.example.motes.ui.archive.ArchiveScreen
 
 @Composable
 fun MotesNavGraph(
@@ -32,7 +33,7 @@ fun MotesNavGraph(
         }
 
         composable(AppRoute.Archive.route) {
-            PlaceholderRoute(title = "archive", onBack = navController::navigateUp)
+            ArchiveScreen(onBack = navController::navigateUp)
         }
 
         composable(

@@ -15,6 +15,12 @@ interface NoteDao {
     @Delete
     suspend fun delete(note: NoteEntity)
 
+    @Query("DELETE FROM notes WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("UPDATE notes SET isArchived = :archived, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun setArchived(id: String, archived: Boolean, updatedAt: Long)
+
     @Query("SELECT * FROM notes WHERE id = :id LIMIT 1")
     fun observeById(id: String): Flow<NoteEntity?>
 
