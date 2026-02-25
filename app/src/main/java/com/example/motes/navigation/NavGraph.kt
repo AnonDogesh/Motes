@@ -13,6 +13,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.motes.ui.home.HomeScreen
 
 @Composable
 fun MotesNavGraph(
@@ -25,12 +26,7 @@ fun MotesNavGraph(
         modifier = modifier
     ) {
         composable(AppRoute.Home.route) {
-            HomeRoute(
-                onArchiveClick = { navController.navigate(AppRoute.Archive.route) },
-                onNoteEditorClick = { navController.navigate(AppRoute.NoteEditor(noteId = "new-note").route) },
-                onChecklistEditorClick = { navController.navigate(AppRoute.ChecklistEditor(checklistId = "new-checklist").route) },
-                onDrawingEditorClick = { navController.navigate(AppRoute.DrawingEditor(drawingId = "new-drawing").route) }
-            )
+            HomeScreen()
         }
 
         composable(AppRoute.Archive.route) {
@@ -57,27 +53,6 @@ fun MotesNavGraph(
         ) {
             PlaceholderRoute(title = "drawing_editor/{drawingId}", onBack = navController::navigateUp)
         }
-    }
-}
-
-@Composable
-private fun HomeRoute(
-    onArchiveClick: () -> Unit,
-    onNoteEditorClick: () -> Unit,
-    onChecklistEditorClick: () -> Unit,
-    onDrawingEditorClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text("home")
-        Button(onClick = onArchiveClick) { Text("Go to archive") }
-        Button(onClick = onNoteEditorClick) { Text("Go to note editor") }
-        Button(onClick = onChecklistEditorClick) { Text("Go to checklist editor") }
-        Button(onClick = onDrawingEditorClick) { Text("Go to drawing editor") }
     }
 }
 
