@@ -26,7 +26,7 @@ data class HomeUiState(
 class HomeViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(
         HomeUiState(
-            items = fakeHomeNotes
+            items = sortItems(fakeHomeNotes)
         )
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -76,3 +76,7 @@ private val fakeHomeNotes = listOf(
     HomeItemUiModel("n-5", "Journal", "Thoughts from today.", false),
     HomeItemUiModel("n-6", "Travel", "Packing checklist and itinerary notes.", false)
 )
+
+
+private fun sortItems(items: List<HomeItemUiModel>): List<HomeItemUiModel> =
+    items.sortedWith(compareByDescending<HomeItemUiModel> { it.isPinned }.thenBy { it.title.lowercase() })

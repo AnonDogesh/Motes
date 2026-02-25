@@ -18,8 +18,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Brush
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -87,31 +93,37 @@ fun SpeedDialFab(
                     modifier = Modifier.alpha(actionsAlpha)
                 ) {
                     ExtendedFloatingActionButton(
+                        text = { Text("New Note") },
+                        icon = { Icon(Icons.Default.Note, contentDescription = null) },
                         onClick = {
                             expanded = false
                             onNewNote()
                         },
-                        text = { Text("New Note") },
+                        expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         shape = RoundedCornerShape(18.dp)
                     )
                     ExtendedFloatingActionButton(
+                        text = { Text("New Checklist") },
+                        icon = { Icon(Icons.Default.Checklist, contentDescription = null) },
                         onClick = {
                             expanded = false
                             onNewChecklist()
                         },
-                        text = { Text("New Checklist") },
+                        expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         shape = RoundedCornerShape(18.dp)
                     )
                     ExtendedFloatingActionButton(
+                        text = { Text("New Drawing") },
+                        icon = { Icon(Icons.Default.Brush, contentDescription = null) },
                         onClick = {
                             expanded = false
                             onNewDrawing()
                         },
-                        text = { Text("New Drawing") },
+                        expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         shape = RoundedCornerShape(18.dp)
@@ -123,7 +135,7 @@ fun SpeedDialFab(
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         shape = CircleShape
                     ) {
-                        Text("×")
+                        Icon(Icons.Default.Close, contentDescription = null)
                     }
                 }
             }
