@@ -4,11 +4,11 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-@Entity(tableName = "notes")
-data class NoteEntity(
+@Entity(tableName = "checklists")
+data class ChecklistEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val title: String,
-    val content: String,
+    val items: List<ChecklistItem>,
     val createdAt: Long,
     val updatedAt: Long,
     val isPinned: Boolean,
