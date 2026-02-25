@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.motes.ui.home.HomeScreen
 import com.example.motes.ui.editor_checklist.ChecklistEditorScreen
+import com.example.motes.ui.editor_drawing.DrawingEditorScreen
 
 @Composable
 fun MotesNavGraph(
@@ -52,7 +53,7 @@ fun MotesNavGraph(
             route = AppRoute.DrawingEditor.ROUTE,
             arguments = AppRoute.DrawingEditor.arguments
         ) {
-            PlaceholderRoute(title = "drawing_editor/{drawingId}", onBack = navController::navigateUp)
+            DrawingEditorScreen(onBack = navController::navigateUp)
         }
     }
 }

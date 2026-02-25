@@ -53,9 +53,6 @@ fun ChecklistEditorScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var newItemText by rememberSaveable { mutableStateOf("") }
 
-    val checkedCount = uiState.items.count { it.isChecked }
-    val progress = if (uiState.items.isEmpty()) 0f else checkedCount.toFloat() / uiState.items.size.toFloat()
-
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -121,7 +118,7 @@ fun ChecklistEditorScreen(
             )
 
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { uiState.progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 6.dp),
@@ -129,7 +126,7 @@ fun ChecklistEditorScreen(
                 trackColor = SurfaceHigh
             )
             Text(
-                text = "$checkedCount / ${uiState.items.size} completed",
+                text = uiState.completionLabel,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 10.dp)

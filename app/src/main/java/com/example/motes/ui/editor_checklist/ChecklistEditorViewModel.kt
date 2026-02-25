@@ -25,19 +25,24 @@ data class ChecklistEditorUiState(
     val checklistId: String?,
     val title: String = "",
     val lastEditedLabel: String = "Not saved yet",
-    val items: List<ChecklistEditorItemUi> = emptyList()
+    val items: List<ChecklistEditorItemUi> = emptyList(),
+    val checkedCount: Int = 0,
+    val progress: Float = 0f,
+    val completionLabel: String = "0 / 0 completed"
 )
 
 class ChecklistEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     private val editorId = AppRoute.ChecklistEditor.from(savedStateHandle)?.checklistId
 
     private val _uiState = MutableStateFlow(
-        ChecklistEditorUiState(
-            checklistId = editorId,
-            title = "Checklist",
-            items = listOf(
-                ChecklistEditorItemUi(text = "First checklist item"),
-                ChecklistEditorItemUi(text = "Second checklist item")
+        calculateDerived(
+            ChecklistEditorUiState(
+                checklistId = editorId,
+                title = "Checklist",
+                items = listOf(
+                    ChecklistEditorItemUi(text = "First checklist item"),
+                    ChecklistEditorItemUi(text = "Second checklist item")
+                )
             )
         )
     )
@@ -50,20 +55,20 @@ class ChecklistEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel()
     }
 
     fun onTitleChanged(value: String) {
-        _uiState.update { it.copy(title = value) }
+        _uiState.update { calculateDerived(it.copy(title = value)) }
         queueAutoSave()
     }
 
     fun onItemTextChanged(itemId: String, value: String) {
         _uiState.update { state ->
-            state.copy(items = state.items.map { if (it.id == itemId) it.copy(text = value) else it })
+            calculateDerived(state.copy(items = state.items.map { if (it.id == itemId) it.copy(text = value) else it }))
         }
         queueAutoSave()
     }
 
     fun onItemCheckedChanged(itemId: String, checked: Boolean) {
         _uiState.update { state ->
-            state.copy(items = state.items.map { if (it.id == itemId) it.copy(isChecked = checked) else it })
+            calculateDerived(state.copy(items = state.items.map { if (it.id == itemId) it.copy(isChecked = checked) else it }))
         }
         queueAutoSave()
     }
@@ -73,14 +78,14 @@ class ChecklistEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel()
         if (trimmed.isBlank()) return
 
         _uiState.update { state ->
-            state.copy(items = state.items + ChecklistEditorItemUi(text = trimmed))
+            calculateDerived(state.copy(items = state.items + ChecklistEditorItemUi(text = trimmed)))
         }
         queueAutoSave()
     }
 
     fun deleteItem(itemId: String) {
         _uiState.update { state ->
-            state.copy(items = state.items.filterNot { it.id == itemId })
+            calculateDerived(state.copy(items = state.items.filterNot { it.id == itemId }))
         }
         queueAutoSave()
     }
@@ -97,5 +102,15 @@ class ChecklistEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel()
                     _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }
                 }
         }
+    }
+
+    private fun calculateDerived(state: ChecklistEditorUiState): ChecklistEditorUiState {
+        val checkedCount = state.items.count { it.isChecked }
+        val progress = if (state.items.isEmpty()) 0f else checkedCount.toFloat() / state.items.size.toFloat()
+        return state.copy(
+            checkedCount = checkedCount,
+            progress = progress,
+            completionLabel = "$checkedCount / ${state.items.size} completed"
+        )
     }
 }
