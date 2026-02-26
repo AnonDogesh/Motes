@@ -9,82 +9,65 @@ import com.example.motes.data.entity.NoteEntity
 import com.example.motes.data.repository.ChecklistRepository
 import com.example.motes.data.repository.DrawingRepository
 import com.example.motes.data.repository.NoteRepository
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-enum class HomeNoteType {
-    NOTE,
-    CHECKLIST,
-    DRAWING
-}
 
 sealed class UiMode {
     data object Normal : UiMode()
     data class Selection(val selectedIds: Set<String>) : UiMode()
 }
 
-data class HomeItemUiModel(
-    val id: String,
-    val title: String,
-    val subtitle: String,
-    val isPinned: Boolean,
-    val type: HomeNoteType
-)
-
-data class HomeUiState(
-    val items: List<HomeItemUiModel> = emptyList(),
-    val uiMode: UiMode = UiMode.Normal
-)
-
 class HomeViewModel(
-    private val noteRepository: NoteRepository? = null,
-    private val checklistRepository: ChecklistRepository? = null,
-    private val drawingRepository: DrawingRepository? = null
+    private val noteRepository: NoteRepository,
+    private val checklistRepository: ChecklistRepository,
+    private val drawingRepository: DrawingRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(
-        HomeUiState(
-            items = sortItems(fakeHomeNotes)
+
+    val notes: StateFlow<List<NoteEntity>> =
+        noteRepository.observeActive().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
         )
-    )
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val _uiMode = MutableStateFlow<UiMode>(UiMode.Normal)
+    val uiMode: StateFlow<UiMode> = _uiMode.asStateFlow()
 
     fun onNoteClick(id: String) {
-        _uiState.update { state ->
-            when (val mode = state.uiMode) {
-                UiMode.Normal -> state
+        _uiMode.update { mode ->
+            when (mode) {
+                UiMode.Normal -> mode
                 is UiMode.Selection -> {
                     val updated = mode.selectedIds.toMutableSet().apply {
                         if (!add(id)) remove(id)
                     }
-                    state.copy(
-                        uiMode = if (updated.isEmpty()) UiMode.Normal else UiMode.Selection(updated)
-                    )
+                    if (updated.isEmpty()) UiMode.Normal else UiMode.Selection(updated)
                 }
             }
         }
     }
 
     fun onNoteLongPress(id: String) {
-        _uiState.update { state ->
-            when (val mode = state.uiMode) {
-                UiMode.Normal -> state.copy(uiMode = UiMode.Selection(setOf(id)))
+        _uiMode.update { mode ->
+            when (mode) {
+                UiMode.Normal -> UiMode.Selection(setOf(id))
                 is UiMode.Selection -> {
                     val updated = mode.selectedIds.toMutableSet().apply {
                         if (!add(id)) remove(id)
                     }
-                    state.copy(
-                        uiMode = if (updated.isEmpty()) UiMode.Normal else UiMode.Selection(updated)
-                    )
+                    if (updated.isEmpty()) UiMode.Normal else UiMode.Selection(updated)
                 }
             }
         }
     }
 
     fun clearSelection() {
-        _uiState.update { it.copy(uiMode = UiMode.Normal) }
+        _uiMode.value = UiMode.Normal
     }
 
     fun onArchiveSelected() {
@@ -114,7 +97,7 @@ class HomeViewModel(
                 isPinned = false,
                 isArchived = false
             )
-            noteRepository?.upsert(note)
+            noteRepository.upsert(note)
             onCreated(note.id)
         }
     }
@@ -130,7 +113,7 @@ class HomeViewModel(
                 isPinned = false,
                 isArchived = false
             )
-            checklistRepository?.upsert(checklist)
+            checklistRepository.upsert(checklist)
             onCreated(checklist.id)
         }
     }
@@ -146,7 +129,7 @@ class HomeViewModel(
                 isPinned = false,
                 isArchived = false
             )
-            drawingRepository?.upsert(drawing)
+            drawingRepository.upsert(drawing)
             onCreated(drawing.id)
         }
     }
@@ -165,15 +148,3 @@ class HomeViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
-
-private val fakeHomeNotes = listOf(
-    HomeItemUiModel("n-1", "Project Outline", "Draft structure for quarterly plan.", true, HomeNoteType.NOTE),
-    HomeItemUiModel("n-2", "Shopping", "Milk, coffee, dish soap, paper towels.", true, HomeNoteType.CHECKLIST),
-    HomeItemUiModel("n-3", "Meeting Notes", "Client sync highlights and next steps.", false, HomeNoteType.NOTE),
-    HomeItemUiModel("n-4", "Ideas", "A list of quick experiments to try.", false, HomeNoteType.DRAWING),
-    HomeItemUiModel("n-5", "Journal", "Thoughts from today.", false, HomeNoteType.NOTE),
-    HomeItemUiModel("n-6", "Travel", "Packing checklist and itinerary notes.", false, HomeNoteType.CHECKLIST)
-)
-
-private fun sortItems(items: List<HomeItemUiModel>): List<HomeItemUiModel> =
-    items.sortedWith(compareByDescending<HomeItemUiModel> { it.isPinned }.thenBy { it.title.lowercase() })

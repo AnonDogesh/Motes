@@ -13,11 +13,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -47,10 +48,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
+import com.example.motes.data.entity.NoteEntity
 import com.example.motes.navigation.AppRoute
 import com.example.motes.ui.components.SpeedDialFab
 import com.example.motes.ui.theme.MotesTheme
@@ -67,8 +68,10 @@ fun HomeScreen(
         HomeViewModelFactory(noteRepository, checklistRepository, drawingRepository)
     }
     val viewModel: HomeViewModel = viewModel(factory = factory)
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val selectionMode = uiState.uiMode as? UiMode.Selection
+
+    val notes by viewModel.notes.collectAsState()
+    val uiMode by viewModel.uiMode.collectAsState()
+    val selectionMode = uiMode as? UiMode.Selection
     val selectedIds = selectionMode?.selectedIds.orEmpty()
     val inSelectionMode = selectionMode != null
 
@@ -135,7 +138,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(items = uiState.items, key = { it.id }) { note ->
+            items(items = notes, key = { it.id }) { note ->
                 NoteCard(
                     note = note,
                     isSelected = selectedIds.contains(note.id),
@@ -143,12 +146,7 @@ fun HomeScreen(
                         if (inSelectionMode) {
                             viewModel.onNoteClick(note.id)
                         } else {
-                            val route = when (note.type) {
-                                HomeNoteType.NOTE -> AppRoute.NoteEditor(note.id).route
-                                HomeNoteType.CHECKLIST -> AppRoute.ChecklistEditor(note.id).route
-                                HomeNoteType.DRAWING -> AppRoute.DrawingEditor(note.id).route
-                            }
-                            navController.navigate(route)
+                            navController.navigate(AppRoute.NoteEditor(note.id).route)
                         }
                     },
                     onLongClick = { viewModel.onNoteLongPress(note.id) }
@@ -182,7 +180,7 @@ private fun SelectionActionBar(
 
 @Composable
 private fun NoteCard(
-    note: HomeItemUiModel,
+    note: NoteEntity,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
@@ -225,12 +223,12 @@ private fun NoteCard(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = note.title,
+                text = note.title.ifBlank { "Untitled" },
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = note.subtitle,
+                text = note.content.ifBlank { "(empty note)" },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
