@@ -44,19 +44,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.motes.data.AppContainer
 import com.example.motes.navigation.AppRoute
+import com.example.motes.ui.components.SpeedDialFab
 import com.example.motes.ui.theme.MotesTheme
 
 @Composable
 fun HomeScreen(
-    navController: NavController,
-    viewModel: HomeViewModel = viewModel()
+    navController: NavController
 ) {
+    val context = LocalContext.current
+    val noteRepository = remember(context) { AppContainer.noteRepository(context) }
+    val checklistRepository = remember(context) { AppContainer.checklistRepository(context) }
+    val drawingRepository = remember(context) { AppContainer.drawingRepository(context) }
+    val factory = remember(noteRepository, checklistRepository, drawingRepository) {
+        HomeViewModelFactory(noteRepository, checklistRepository, drawingRepository)
+    }
+    val viewModel: HomeViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectionMode = uiState.uiMode as? UiMode.Selection
     val selectedIds = selectionMode?.selectedIds.orEmpty()
@@ -78,6 +88,25 @@ fun HomeScreen(
                 actions = {
                     if (inSelectionMode) {
                         TextButton(onClick = viewModel::clearSelection) { Text("Cancel") }
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            SpeedDialFab(
+                onNewNote = {
+                    viewModel.createNewNote { id ->
+                        navController.navigate(AppRoute.NoteEditor(id).route)
+                    }
+                },
+                onNewChecklist = {
+                    viewModel.createNewChecklist { id ->
+                        navController.navigate(AppRoute.ChecklistEditor(id).route)
+                    }
+                },
+                onNewDrawing = {
+                    viewModel.createNewDrawing { id ->
+                        navController.navigate(AppRoute.DrawingEditor(id).route)
                     }
                 }
             )
@@ -220,6 +249,6 @@ private fun NoteCard(
 @Composable
 private fun HomeScreenPreview() {
     MotesTheme {
-        HomeScreen(navController = androidx.navigation.compose.rememberNavController(), viewModel = HomeViewModel())
+        HomeScreen(navController = androidx.navigation.compose.rememberNavController())
     }
 }
