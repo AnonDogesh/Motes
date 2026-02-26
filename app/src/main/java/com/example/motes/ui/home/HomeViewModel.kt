@@ -6,6 +6,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+enum class HomeNoteType {
+    NOTE,
+    CHECKLIST,
+    DRAWING
+}
+
 sealed class UiMode {
     data object Normal : UiMode()
     data class Selection(val selectedIds: Set<String>) : UiMode()
@@ -15,7 +21,8 @@ data class HomeItemUiModel(
     val id: String,
     val title: String,
     val subtitle: String,
-    val isPinned: Boolean
+    val isPinned: Boolean,
+    val type: HomeNoteType
 )
 
 data class HomeUiState(
@@ -66,15 +73,31 @@ class HomeViewModel : ViewModel() {
     fun clearSelection() {
         _uiState.update { it.copy(uiMode = UiMode.Normal) }
     }
+
+    fun onArchiveSelected() {
+        // Stub for future multi-select archive behavior.
+    }
+
+    fun onDeleteSelected() {
+        // Stub for future multi-select delete behavior.
+    }
+
+    fun onPinSelected() {
+        // Stub for future multi-select pin behavior.
+    }
+
+    fun onShareSelected() {
+        // Stub for future multi-select share behavior.
+    }
 }
 
 private val fakeHomeNotes = listOf(
-    HomeItemUiModel("n-1", "Project Outline", "Draft structure for quarterly plan.", true),
-    HomeItemUiModel("n-2", "Shopping", "Milk, coffee, dish soap, paper towels.", true),
-    HomeItemUiModel("n-3", "Meeting Notes", "Client sync highlights and next steps.", false),
-    HomeItemUiModel("n-4", "Ideas", "A list of quick experiments to try.", false),
-    HomeItemUiModel("n-5", "Journal", "Thoughts from today.", false),
-    HomeItemUiModel("n-6", "Travel", "Packing checklist and itinerary notes.", false)
+    HomeItemUiModel("n-1", "Project Outline", "Draft structure for quarterly plan.", true, HomeNoteType.NOTE),
+    HomeItemUiModel("n-2", "Shopping", "Milk, coffee, dish soap, paper towels.", true, HomeNoteType.CHECKLIST),
+    HomeItemUiModel("n-3", "Meeting Notes", "Client sync highlights and next steps.", false, HomeNoteType.NOTE),
+    HomeItemUiModel("n-4", "Ideas", "A list of quick experiments to try.", false, HomeNoteType.DRAWING),
+    HomeItemUiModel("n-5", "Journal", "Thoughts from today.", false, HomeNoteType.NOTE),
+    HomeItemUiModel("n-6", "Travel", "Packing checklist and itinerary notes.", false, HomeNoteType.CHECKLIST)
 )
 
 
