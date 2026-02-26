@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.SurfaceMedium
 import com.example.motes.ui.theme.SurfaceHigh
@@ -47,7 +48,7 @@ import com.example.motes.ui.theme.SurfaceHigh
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteEditorScreen(
-    onBack: () -> Boolean,
+    navController: NavController,
     viewModel: NoteEditorViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -79,7 +80,7 @@ fun NoteEditorScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onBack() }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Text("←", style = MaterialTheme.typography.titleLarge)
                     }
                 },

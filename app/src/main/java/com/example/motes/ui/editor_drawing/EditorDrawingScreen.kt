@@ -35,6 +35,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.PrimaryBackground
 import com.example.motes.ui.theme.SurfaceHigh
@@ -43,7 +44,7 @@ import com.example.motes.ui.theme.SurfaceMedium
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawingEditorScreen(
-    onBack: () -> Boolean,
+    navController: NavController,
     viewModel: DrawingEditorViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,7 +61,7 @@ fun DrawingEditorScreen(
                     }
                 },
                 navigationIcon = {
-                    TextButton(onClick = { onBack() }) { Text("Back") }
+                    TextButton(onClick = { navController.popBackStack() }) { Text("Back") }
                 },
                 actions = {
                     TextButton(onClick = viewModel::undo) { Text("Undo") }

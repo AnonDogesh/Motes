@@ -45,10 +45,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.motes.navigation.AppRoute
 import com.example.motes.ui.theme.MotesTheme
 
 @Composable
 fun HomeScreen(
+    navController: NavController,
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -104,7 +107,10 @@ fun HomeScreen(
                 NoteCard(
                     note = note,
                     isSelected = selectedIds.contains(note.id),
-                    onClick = { viewModel.onNoteClick(note.id) },
+                    onClick = {
+                        viewModel.onNoteClick(note.id)
+                        navController.navigate(AppRoute.NoteEditor(note.id).route)
+                    },
                     onLongClick = { viewModel.onNoteLongPress(note.id) }
                 )
             }
@@ -201,6 +207,6 @@ private fun NoteCard(
 @Composable
 private fun HomeScreenPreview() {
     MotesTheme {
-        HomeScreen(viewModel = HomeViewModel())
+        HomeScreen(navController = androidx.navigation.compose.rememberNavController(), viewModel = HomeViewModel())
     }
 }

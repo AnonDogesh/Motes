@@ -30,11 +30,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArchiveScreen(onBack: () -> Boolean) {
+fun ArchiveScreen(navController: NavController) {
     val context = LocalContext.current
     val noteRepository = remember(context) { AppContainer.noteRepository(context) }
     val factory = remember(noteRepository) { ArchiveViewModelFactory(noteRepository) }
@@ -48,7 +49,7 @@ fun ArchiveScreen(onBack: () -> Boolean) {
             TopAppBar(
                 title = { Text("Archive", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)) },
                 navigationIcon = {
-                    TextButton(onClick = { onBack() }) { Text("Back") }
+                    TextButton(onClick = { navController.popBackStack() }) { Text("Back") }
                 }
             )
         }

@@ -32,7 +32,7 @@ data class ChecklistEditorUiState(
 )
 
 class ChecklistEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
-    private val editorId = AppRoute.ChecklistEditor.from(savedStateHandle)?.checklistId
+    private val editorId = AppRoute.ChecklistEditor.from(savedStateHandle)?.noteId
 
     private val _uiState = MutableStateFlow(
         calculateDerived(

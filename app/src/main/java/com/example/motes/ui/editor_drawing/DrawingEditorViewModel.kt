@@ -41,7 +41,7 @@ data class DrawingEditorUiState(
 )
 
 class DrawingEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
-    private val editorId = AppRoute.DrawingEditor.from(savedStateHandle)?.drawingId
+    private val editorId = AppRoute.DrawingEditor.from(savedStateHandle)?.noteId
 
     private val _uiState = MutableStateFlow(
         DrawingEditorUiState(
