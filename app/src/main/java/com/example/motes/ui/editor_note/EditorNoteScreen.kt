@@ -18,48 +18,54 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.createSavedStateHandle
 import androidx.navigation.NavController
+import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
-import com.example.motes.ui.theme.SurfaceMedium
 import com.example.motes.ui.theme.SurfaceHigh
+import com.example.motes.ui.theme.SurfaceMedium
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteEditorScreen(
-    navController: NavController,
-    viewModel: NoteEditorViewModel = viewModel()
+    navController: NavController
 ) {
+    val context = LocalContext.current
+    val repo = AppContainer.noteRepository(context)
+    val viewModel: NoteEditorViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+                return NoteEditorViewModel(repo, extras.createSavedStateHandle()) as T
+            }
+        }
+    )
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val noteKey = uiState.noteId ?: "new"
-
-    var titleText by rememberSaveable(noteKey) { mutableStateOf(uiState.initialTitle) }
-    var bodyText by rememberSaveable(noteKey) { mutableStateOf(uiState.initialBody) }
-
-    LaunchedEffect(titleText, bodyText) {
-        viewModel.onDraftChanged(titleText, bodyText)
-    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -81,34 +87,23 @@ fun NoteEditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Text("←", style = MaterialTheme.typography.titleLarge)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Text("⇪", style = MaterialTheme.typography.titleLarge)
-                    }
-                    IconButton(onClick = { }) {
-                        Text("⋯", style = MaterialTheme.typography.titleLarge)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         },
-        bottomBar = {
-            NoteFormattingToolbar()
-        }
+        bottomBar = { NoteFormattingToolbar() }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.Top
+                .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
             BasicTextField(
-                value = titleText,
-                onValueChange = { titleText = it },
+                value = uiState.title,
+                onValueChange = viewModel::onTitleChanged,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp, bottom = 6.dp),
@@ -118,12 +113,8 @@ fun NoteEditorScreen(
                 ),
                 cursorBrush = SolidColor(Accent),
                 decorationBox = { innerTextField ->
-                    if (titleText.isBlank()) {
-                        Text(
-                            text = "Title",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
+                    if (uiState.title.isBlank()) {
+                        Text("Title", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                     }
                     innerTextField()
                 }
@@ -132,23 +123,17 @@ fun NoteEditorScreen(
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
 
             BasicTextField(
-                value = bodyText,
-                onValueChange = { bodyText = it },
+                value = uiState.body,
+                onValueChange = viewModel::onBodyChanged,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 14.dp)
                     .height(620.dp),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onBackground
-                ),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
                 cursorBrush = SolidColor(Accent),
                 decorationBox = { innerTextField ->
-                    if (bodyText.isBlank()) {
-                        Text(
-                            text = "Start writing your note...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
+                    if (uiState.body.isBlank()) {
+                        Text("Start writing your note...", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
                     }
                     innerTextField()
                 }
@@ -159,65 +144,46 @@ fun NoteEditorScreen(
 
 @Composable
 private fun NoteFormattingToolbar() {
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(SurfaceMedium)
             .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 68.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ToolbarPillButton("☑")
-            ToolbarPillButton("B", emphasized = true)
-            ToolbarPillButton("I", italic = true)
-            ToolbarPillButton("U")
-            ToolbarPillButton("•")
-            ToolbarPillButton("Tt")
-        }
-
+        FormatButton(label = "B")
+        FormatButton(label = "I", italic = true)
+        FormatButton(label = "U")
+        Spacer(modifier = Modifier.width(8.dp))
         FloatingActionButton(
-            onClick = { },
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .size(44.dp),
+            onClick = {},
             containerColor = Accent,
             contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(42.dp),
             shape = CircleShape
         ) {
-            Text("＋")
+            Text("+")
         }
     }
 }
 
 @Composable
-private fun ToolbarPillButton(
+private fun FormatButton(
     label: String,
-    emphasized: Boolean = false,
     italic: Boolean = false
 ) {
     Box(
         modifier = Modifier
-            .background(
-                color = SurfaceHigh,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
+            .background(SurfaceHigh, RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge.copy(
-                fontWeight = if (emphasized) FontWeight.Bold else FontWeight.Medium,
                 fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal
-            ),
-            color = MaterialTheme.colorScheme.onSurface
+            )
         )
     }
-    Spacer(modifier = Modifier.width(2.dp))
 }

@@ -3,16 +3,19 @@ package com.example.motes.ui.editor_drawing
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.motes.data.entity.DrawingEntity
+import com.example.motes.data.repository.DrawingRepository
 import com.example.motes.navigation.AppRoute
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val AUTO_SAVE_DEBOUNCE_MS = 700L
+private const val AUTO_SAVE_DEBOUNCE_MS = 500L
 
 enum class DrawingTool {
     Brush,
@@ -33,26 +36,26 @@ data class DrawingStrokeUi(
 
 data class DrawingEditorUiState(
     val drawingId: String?,
+    val title: String = "",
     val strokes: List<DrawingStrokeUi> = emptyList(),
     val selectedColor: Long = 0xFFEAEFEFL,
     val strokeWidth: Float = 8f,
     val selectedTool: DrawingTool = DrawingTool.Brush,
-    val lastEditedLabel: String = "Not saved yet"
+    val lastEditedLabel: String = "Not saved yet",
+    val createdAt: Long = System.currentTimeMillis()
 )
 
-class DrawingEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
+class DrawingEditorViewModel(
+    private val drawingRepository: DrawingRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
     private val editorId = AppRoute.DrawingEditor.from(savedStateHandle)?.noteId
 
-    private val _uiState = MutableStateFlow(
-        DrawingEditorUiState(
-            drawingId = editorId
-        )
-    )
+    private val _uiState = MutableStateFlow(DrawingEditorUiState(drawingId = editorId))
     val uiState: StateFlow<DrawingEditorUiState> = _uiState.asStateFlow()
 
-    private val draftUpdates = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
     init {
+        observeDrawing()
         observeAutoSave()
     }
 
@@ -68,6 +71,10 @@ class DrawingEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         _uiState.update { it.copy(selectedTool = tool) }
     }
 
+    fun setTitle(value: String) {
+        _uiState.update { it.copy(title = value) }
+    }
+
     fun addStroke(points: List<DrawPoint>) {
         if (points.size < 2) return
 
@@ -81,32 +88,81 @@ class DrawingEditorViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                 )
             )
         }
-        queueAutoSave()
     }
 
     fun undo() {
         _uiState.update { state ->
             if (state.strokes.isEmpty()) state else state.copy(strokes = state.strokes.dropLast(1))
         }
-        queueAutoSave()
     }
 
     fun clear() {
         _uiState.update { it.copy(strokes = emptyList()) }
-        queueAutoSave()
     }
 
-    private fun queueAutoSave() {
-        draftUpdates.tryEmit(Unit)
+    private fun observeDrawing() {
+        val id = editorId ?: return
+        viewModelScope.launch {
+            drawingRepository.observeById(id).collectLatest { drawing ->
+                if (drawing != null) {
+                    _uiState.update {
+                        it.copy(
+                            title = drawing.title,
+                            strokes = decodeStrokes(drawing.strokePaths),
+                            createdAt = drawing.createdAt
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private fun observeAutoSave() {
         viewModelScope.launch {
-            draftUpdates
+            uiState
+                .filter { !it.drawingId.isNullOrBlank() }
                 .debounce(AUTO_SAVE_DEBOUNCE_MS)
-                .collect {
+                .collectLatest { state ->
+                    if (state.title.isBlank() && state.strokes.isEmpty()) return@collectLatest
+                    val id = state.drawingId ?: return@collectLatest
+                    drawingRepository.upsert(
+                        DrawingEntity(
+                            id = id,
+                            title = state.title,
+                            strokePaths = encodeStrokes(state.strokes),
+                            createdAt = state.createdAt,
+                            updatedAt = System.currentTimeMillis(),
+                            isPinned = false,
+                            isArchived = false
+                        )
+                    )
                     _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }
                 }
         }
     }
+
+    private fun encodeStrokes(strokes: List<DrawingStrokeUi>): List<String> =
+        strokes.map { stroke ->
+            val pointPart = stroke.points.joinToString(";") { "${it.x},${it.y}" }
+            "${stroke.color}|${stroke.width}|${stroke.isEraser}|$pointPart"
+        }
+
+    private fun decodeStrokes(paths: List<String>): List<DrawingStrokeUi> =
+        paths.mapNotNull { encoded ->
+            val segments = encoded.split("|", limit = 4)
+            if (segments.size < 4) return@mapNotNull null
+            val color = segments[0].toLongOrNull() ?: return@mapNotNull null
+            val width = segments[1].toFloatOrNull() ?: return@mapNotNull null
+            val isEraser = segments[2].toBooleanStrictOrNull() ?: false
+            val points = segments[3]
+                .split(';')
+                .mapNotNull { pair ->
+                    val xy = pair.split(',', limit = 2)
+                    if (xy.size != 2) return@mapNotNull null
+                    val x = xy[0].toFloatOrNull() ?: return@mapNotNull null
+                    val y = xy[1].toFloatOrNull() ?: return@mapNotNull null
+                    DrawPoint(x, y)
+                }
+            if (points.size < 2) null else DrawingStrokeUi(points, color, width, isEraser)
+        }
 }

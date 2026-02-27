@@ -7,11 +7,11 @@ package com.example.motes.ui.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
-import com.example.motes.data.entity.NoteEntity
 import com.example.motes.navigation.AppRoute
 import com.example.motes.ui.components.SpeedDialFab
 import com.example.motes.ui.theme.MotesTheme
@@ -69,8 +68,10 @@ fun HomeScreen(
     }
     val viewModel: HomeViewModel = viewModel(factory = factory)
 
-    val notes by viewModel.notes.collectAsState()
+    val items by viewModel.items.collectAsState()
     val uiMode by viewModel.uiMode.collectAsState()
+    val filter by viewModel.filter.collectAsState()
+
     val selectionMode = uiMode as? UiMode.Selection
     val selectedIds = selectionMode?.selectedIds.orEmpty()
     val inSelectionMode = selectionMode != null
@@ -91,27 +92,26 @@ fun HomeScreen(
                 actions = {
                     if (inSelectionMode) {
                         TextButton(onClick = viewModel::clearSelection) { Text("Cancel") }
+                    } else {
+                        TextButton(onClick = viewModel::cycleFilter) {
+                            Text(
+                                text = when (filter) {
+                                    HomeFilter.ALL -> "Filter: All"
+                                    HomeFilter.NOTE -> "Filter: Notes"
+                                    HomeFilter.CHECKLIST -> "Filter: Checklists"
+                                    HomeFilter.DRAWING -> "Filter: Drawings"
+                                }
+                            )
+                        }
                     }
                 }
             )
         },
         floatingActionButton = {
             SpeedDialFab(
-                onNewNote = {
-                    viewModel.createNewNote { id ->
-                        navController.navigate(AppRoute.NoteEditor(id).route)
-                    }
-                },
-                onNewChecklist = {
-                    viewModel.createNewChecklist { id ->
-                        navController.navigate(AppRoute.ChecklistEditor(id).route)
-                    }
-                },
-                onNewDrawing = {
-                    viewModel.createNewDrawing { id ->
-                        navController.navigate(AppRoute.DrawingEditor(id).route)
-                    }
-                }
+                onNewNote = { viewModel.createNewNote { id -> navController.navigate(AppRoute.NoteEditor(id).route) } },
+                onNewChecklist = { viewModel.createNewChecklist { id -> navController.navigate(AppRoute.ChecklistEditor(id).route) } },
+                onNewDrawing = { viewModel.createNewDrawing { id -> navController.navigate(AppRoute.DrawingEditor(id).route) } }
             )
         },
         bottomBar = {
@@ -138,18 +138,23 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(items = notes, key = { it.id }) { note ->
-                NoteCard(
-                    note = note,
-                    isSelected = selectedIds.contains(note.id),
+            items(items = items, key = { it.id }) { item ->
+                HomeCard(
+                    item = item,
+                    isSelected = selectedIds.contains(item.id),
                     onClick = {
                         if (inSelectionMode) {
-                            viewModel.onNoteClick(note.id)
+                            viewModel.onNoteClick(item.id)
                         } else {
-                            navController.navigate(AppRoute.NoteEditor(note.id).route)
+                            val route = when (item.type) {
+                                HomeNoteType.NOTE -> AppRoute.NoteEditor(item.id).route
+                                HomeNoteType.CHECKLIST -> AppRoute.ChecklistEditor(item.id).route
+                                HomeNoteType.DRAWING -> AppRoute.DrawingEditor(item.id).route
+                            }
+                            navController.navigate(route)
                         }
                     },
-                    onLongClick = { viewModel.onNoteLongPress(note.id) }
+                    onLongClick = { viewModel.onNoteLongPress(item.id) }
                 )
             }
         }
@@ -179,8 +184,8 @@ private fun SelectionActionBar(
 }
 
 @Composable
-private fun NoteCard(
-    note: NoteEntity,
+private fun HomeCard(
+    item: HomeListItem,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
@@ -189,7 +194,7 @@ private fun NoteCard(
     val isPressed = interactionSource.collectIsPressedAsState().value
     val animatedElevation = animateDpAsState(
         targetValue = if (isPressed) 2.dp else if (isSelected) 10.dp else 8.dp,
-        label = "note_card_elevation"
+        label = "home_card_elevation"
     )
 
     Card(
@@ -223,16 +228,25 @@ private fun NoteCard(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = note.title.ifBlank { "Untitled" },
+                text = item.title,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = note.content.ifBlank { "(empty note)" },
+                text = item.subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (note.isPinned) {
+            Text(
+                text = when (item.type) {
+                    HomeNoteType.NOTE -> "Note"
+                    HomeNoteType.CHECKLIST -> "Checklist"
+                    HomeNoteType.DRAWING -> "Drawing"
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            if (item.isPinned) {
                 Text(
                     text = "Pinned",
                     style = MaterialTheme.typography.labelLarge,

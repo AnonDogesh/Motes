@@ -9,13 +9,36 @@ import com.example.motes.data.entity.NoteEntity
 import com.example.motes.data.repository.ChecklistRepository
 import com.example.motes.data.repository.DrawingRepository
 import com.example.motes.data.repository.NoteRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+enum class HomeNoteType {
+    NOTE,
+    CHECKLIST,
+    DRAWING
+}
+
+enum class HomeFilter {
+    ALL,
+    NOTE,
+    CHECKLIST,
+    DRAWING
+}
+
+data class HomeListItem(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val isPinned: Boolean,
+    val type: HomeNoteType
+)
 
 sealed class UiMode {
     data object Normal : UiMode()
@@ -37,6 +60,70 @@ class HomeViewModel(
 
     private val _uiMode = MutableStateFlow<UiMode>(UiMode.Normal)
     val uiMode: StateFlow<UiMode> = _uiMode.asStateFlow()
+
+    private val _filter = MutableStateFlow(HomeFilter.ALL)
+    val filter: StateFlow<HomeFilter> = _filter.asStateFlow()
+
+    val items: StateFlow<List<HomeListItem>> = combine(
+        noteRepository.observeActive().map { list ->
+            list.map { note ->
+                HomeListItem(
+                    id = note.id,
+                    title = note.title.ifBlank { "Untitled note" },
+                    subtitle = note.content.ifBlank { "(empty note)" },
+                    isPinned = note.isPinned,
+                    type = HomeNoteType.NOTE
+                )
+            }
+        },
+        checklistRepository.observeActive().map { list ->
+            list.map { checklist ->
+                HomeListItem(
+                    id = checklist.id,
+                    title = checklist.title.ifBlank { "Untitled checklist" },
+                    subtitle = summarizeChecklist(checklist),
+                    isPinned = checklist.isPinned,
+                    type = HomeNoteType.CHECKLIST
+                )
+            }
+        },
+        drawingRepository.observeActive().map { list ->
+            list.map { drawing ->
+                HomeListItem(
+                    id = drawing.id,
+                    title = drawing.title.ifBlank { "Untitled drawing" },
+                    subtitle = "${drawing.strokePaths.size} stroke(s)",
+                    isPinned = drawing.isPinned,
+                    type = HomeNoteType.DRAWING
+                )
+            }
+        },
+        filter
+    ) { notesItems, checklistItems, drawingItems, activeFilter ->
+        val merged = (notesItems + checklistItems + drawingItems)
+            .sortedWith(compareByDescending<HomeListItem> { it.isPinned }.thenBy { it.title.lowercase() })
+        when (activeFilter) {
+            HomeFilter.ALL -> merged
+            HomeFilter.NOTE -> merged.filter { it.type == HomeNoteType.NOTE }
+            HomeFilter.CHECKLIST -> merged.filter { it.type == HomeNoteType.CHECKLIST }
+            HomeFilter.DRAWING -> merged.filter { it.type == HomeNoteType.DRAWING }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList()
+    )
+
+    fun cycleFilter() {
+        _filter.update {
+            when (it) {
+                HomeFilter.ALL -> HomeFilter.NOTE
+                HomeFilter.NOTE -> HomeFilter.CHECKLIST
+                HomeFilter.CHECKLIST -> HomeFilter.DRAWING
+                HomeFilter.DRAWING -> HomeFilter.ALL
+            }
+        }
+    }
 
     fun onNoteClick(id: String) {
         _uiMode.update { mode ->
@@ -70,21 +157,10 @@ class HomeViewModel(
         _uiMode.value = UiMode.Normal
     }
 
-    fun onArchiveSelected() {
-        // Stub for future multi-select archive behavior.
-    }
-
-    fun onDeleteSelected() {
-        // Stub for future multi-select delete behavior.
-    }
-
-    fun onPinSelected() {
-        // Stub for future multi-select pin behavior.
-    }
-
-    fun onShareSelected() {
-        // Stub for future multi-select share behavior.
-    }
+    fun onArchiveSelected() {}
+    fun onDeleteSelected() {}
+    fun onPinSelected() {}
+    fun onShareSelected() {}
 
     fun createNewNote(onCreated: (String) -> Unit) {
         viewModelScope.launch {
@@ -132,6 +208,11 @@ class HomeViewModel(
             drawingRepository.upsert(drawing)
             onCreated(drawing.id)
         }
+    }
+
+    private fun summarizeChecklist(checklist: ChecklistEntity): String {
+        val done = checklist.items.count { it.isChecked }
+        return if (checklist.items.isEmpty()) "No checklist items" else "$done/${checklist.items.size} done"
     }
 }
 
