@@ -35,22 +35,31 @@ fun MotesApp() {
                 composable(
                     route = AppRoute.NoteEditor.ROUTE,
                     arguments = AppRoute.NoteEditor.arguments
-                ) {
-                    NoteEditorScreen(navController = navController)
+                ) { backStackEntry ->
+                    NoteEditorScreen(
+                        navController = navController,
+                        backStackEntry = backStackEntry
+                    )
                 }
 
                 composable(
                     route = AppRoute.ChecklistEditor.ROUTE,
                     arguments = AppRoute.ChecklistEditor.arguments
-                ) {
-                    ChecklistEditorScreen(navController = navController)
+                ) { backStackEntry ->
+                    ChecklistEditorScreen(
+                        navController = navController,
+                        backStackEntry = backStackEntry
+                    )
                 }
 
                 composable(
                     route = AppRoute.DrawingEditor.ROUTE,
                     arguments = AppRoute.DrawingEditor.arguments
-                ) {
-                    DrawingEditorScreen(navController = navController)
+                ) { backStackEntry ->
+                    DrawingEditorScreen(
+                        navController = navController,
+                        backStackEntry = backStackEntry
+                    )
                 }
             }
         }

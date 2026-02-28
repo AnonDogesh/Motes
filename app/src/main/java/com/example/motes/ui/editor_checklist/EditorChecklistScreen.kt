@@ -46,9 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
@@ -58,14 +57,18 @@ import com.example.motes.ui.theme.SurfaceMedium
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChecklistEditorScreen(
-    navController: NavController
+    navController: NavController,
+    backStackEntry: NavBackStackEntry
 ) {
     val context = LocalContext.current
     val repository = AppContainer.checklistRepository(context)
+    val savedStateHandle = backStackEntry.savedStateHandle
     val viewModel: ChecklistEditorViewModel = viewModel(
+        backStackEntry,
         factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-                return ChecklistEditorViewModel(repository, extras.createSavedStateHandle()) as T
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return ChecklistEditorViewModel(repository, savedStateHandle) as T
             }
         }
     )
