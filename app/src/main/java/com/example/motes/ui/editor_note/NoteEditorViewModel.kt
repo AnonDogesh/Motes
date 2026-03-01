@@ -1,12 +1,9 @@
 package com.example.motes.ui.editor_note
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.motes.data.entity.NoteEntity
 import com.example.motes.data.repository.NoteRepository
-import com.example.motes.navigation.AppRoute
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,9 +26,8 @@ data class NoteEditorUiState(
 
 class NoteEditorViewModel(
     private val noteRepository: NoteRepository,
-    savedStateHandle: SavedStateHandle
+    private val initialNoteId: Long
 ) : ViewModel() {
-    private val initialNoteId: Long = savedStateHandle[AppRoute.NoteEditor.ARG_NOTE_ID] ?: -1L
 
     private val _uiState = MutableStateFlow(NoteEditorUiState(noteId = initialNoteId))
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
@@ -114,18 +110,5 @@ class NoteEditorViewModel(
             )
         )
         _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }
-    }
-}
-
-class NoteEditorViewModelFactory(
-    private val noteRepository: NoteRepository,
-    private val savedStateHandle: SavedStateHandle
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(NoteEditorViewModel::class.java)) {
-            return NoteEditorViewModel(noteRepository, savedStateHandle) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

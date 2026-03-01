@@ -57,13 +57,13 @@ fun NoteEditorScreen(
 ) {
     val context = LocalContext.current
     val repo = AppContainer.noteRepository(context)
-    val savedStateHandle = backStackEntry.savedStateHandle
+    val noteId = backStackEntry.arguments?.getLong("noteId") ?: -1L
     val viewModel: NoteEditorViewModel = viewModel(
         backStackEntry,
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return NoteEditorViewModel(repo, savedStateHandle) as T
+                return NoteEditorViewModel(repo, noteId) as T
             }
         }
     )
