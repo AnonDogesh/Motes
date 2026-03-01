@@ -68,9 +68,9 @@ class HomeViewModel(
         noteRepository.observeActive().map { list ->
             list.map { note ->
                 HomeListItem(
-                    id = note.id,
+                    id = note.id.toString(),
                     title = note.title.ifBlank { "Untitled note" },
-                    subtitle = note.content.ifBlank { "(empty note)" },
+                    subtitle = note.content.take(100).ifBlank { "(empty note)" },
                     isPinned = note.isPinned,
                     type = HomeNoteType.NOTE
                 )
@@ -162,20 +162,8 @@ class HomeViewModel(
     fun onPinSelected() {}
     fun onShareSelected() {}
 
-    fun createNewNote(onCreated: (String) -> Unit) {
-        viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            val note = NoteEntity(
-                title = "",
-                content = "",
-                createdAt = now,
-                updatedAt = now,
-                isPinned = false,
-                isArchived = false
-            )
-            noteRepository.upsert(note)
-            onCreated(note.id)
-        }
+    fun createNewNote(onCreated: (Long) -> Unit) {
+        onCreated(-1L)
     }
 
     fun createNewChecklist(onCreated: (String) -> Unit) {

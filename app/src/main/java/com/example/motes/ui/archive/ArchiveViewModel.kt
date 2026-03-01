@@ -25,13 +25,13 @@ class ArchiveViewModel(
         }
     }
 
-    fun restore(id: String) {
+    fun restore(id: Long) {
         viewModelScope.launch {
             noteRepository.restore(id)
         }
     }
 
-    fun deletePermanently(id: String) {
+    fun deletePermanently(id: Long) {
         viewModelScope.launch {
             noteRepository.deletePermanently(id)
         }
@@ -43,7 +43,7 @@ data class ArchiveUiState(
 )
 
 data class ArchiveItemUi(
-    val id: String,
+    val id: Long,
     val title: String,
     val preview: String,
     val updatedAt: Long,

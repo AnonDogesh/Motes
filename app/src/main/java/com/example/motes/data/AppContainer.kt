@@ -56,7 +56,7 @@ object AppContainer {
 
     private fun database(context: Context): AppDatabase {
         return database ?: synchronized(this) {
-            database ?: Room.databaseBuilder(context, AppDatabase::class.java, "motes.db").build().also {
+            database ?: Room.databaseBuilder(context, AppDatabase::class.java, "motes.db").fallbackToDestructiveMigration().build().also {
                 database = it
             }
         }

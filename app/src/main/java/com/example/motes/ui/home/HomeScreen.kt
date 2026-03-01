@@ -147,7 +147,7 @@ fun HomeScreen(
                             viewModel.onNoteClick(item.id)
                         } else {
                             val route = when (item.type) {
-                                HomeNoteType.NOTE -> AppRoute.NoteEditor(item.id).route
+                                HomeNoteType.NOTE -> AppRoute.NoteEditor(item.id.toLongOrNull() ?: -1L).route
                                 HomeNoteType.CHECKLIST -> AppRoute.ChecklistEditor(item.id).route
                                 HomeNoteType.DRAWING -> AppRoute.DrawingEditor(item.id).route
                             }

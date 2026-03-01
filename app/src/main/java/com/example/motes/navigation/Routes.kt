@@ -8,15 +8,15 @@ sealed class AppRoute(val route: String) {
     data object Home : AppRoute("home")
     data object Archive : AppRoute("archive")
 
-    data class NoteEditor(val noteId: String) : AppRoute("editor_note/$noteId") {
+    data class NoteEditor(val noteId: Long) : AppRoute("editor_note/$noteId") {
         companion object Spec {
             const val ARG_NOTE_ID = "noteId"
             const val ROUTE = "editor_note/{$ARG_NOTE_ID}"
-            val arguments = listOf(navArgument(ARG_NOTE_ID) { type = NavType.StringType })
+            val arguments = listOf(navArgument(ARG_NOTE_ID) { type = NavType.LongType })
 
             fun from(savedStateHandle: SavedStateHandle): NoteEditor? {
-                val noteId = savedStateHandle.get<String>(ARG_NOTE_ID).orEmpty()
-                return noteId.takeIf(String::isNotBlank)?.let(::NoteEditor)
+                val noteId = savedStateHandle[ARG_NOTE_ID] ?: -1L
+                return NoteEditor(noteId)
             }
         }
     }
