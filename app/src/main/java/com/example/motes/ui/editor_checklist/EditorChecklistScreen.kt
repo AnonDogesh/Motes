@@ -62,18 +62,18 @@ fun ChecklistEditorScreen(
 ) {
     val context = LocalContext.current
     val repository = AppContainer.checklistRepository(context)
-    val savedStateHandle = backStackEntry.savedStateHandle
+    val checklistId = backStackEntry.arguments?.getString("noteId").orEmpty()
     val viewModel: ChecklistEditorViewModel = viewModel(
         backStackEntry,
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return ChecklistEditorViewModel(repository, savedStateHandle) as T
+                return ChecklistEditorViewModel(repository, checklistId) as T
             }
         }
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val checklistKey = uiState.checklistId ?: "new"
+    val checklistKey = uiState.checklistId.ifBlank { "new" }
     var newItemText by rememberSaveable(checklistKey) { mutableStateOf("") }
 
     Scaffold(

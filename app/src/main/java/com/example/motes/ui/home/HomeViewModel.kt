@@ -81,7 +81,7 @@ class HomeViewModel(
                 HomeListItem(
                     id = checklist.id,
                     title = checklist.title.ifBlank { "Untitled checklist" },
-                    subtitle = summarizeChecklist(checklist),
+                    subtitle = checklist.items.joinToString(" ") { it.text }.take(100).ifBlank { "(empty checklist)" },
                     isPinned = checklist.isPinned,
                     type = HomeNoteType.CHECKLIST
                 )

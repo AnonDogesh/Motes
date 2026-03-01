@@ -59,13 +59,13 @@ fun DrawingEditorScreen(
 ) {
     val context = LocalContext.current
     val repository = AppContainer.drawingRepository(context)
-    val savedStateHandle = backStackEntry.savedStateHandle
+    val drawingId = backStackEntry.arguments?.getString("noteId").orEmpty()
     val viewModel: DrawingEditorViewModel = viewModel(
         backStackEntry,
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
-                return DrawingEditorViewModel(repository, savedStateHandle) as T
+                return DrawingEditorViewModel(repository, drawingId) as T
             }
         }
     )

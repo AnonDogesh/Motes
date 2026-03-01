@@ -1,11 +1,9 @@
 package com.example.motes.ui.editor_drawing
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.motes.data.entity.DrawingEntity
 import com.example.motes.data.repository.DrawingRepository
-import com.example.motes.navigation.AppRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +33,7 @@ data class DrawingStrokeUi(
 )
 
 data class DrawingEditorUiState(
-    val drawingId: String?,
+    val drawingId: String,
     val title: String = "",
     val strokes: List<DrawingStrokeUi> = emptyList(),
     val selectedColor: Long = 0xFFEAEFEFL,
@@ -47,9 +45,8 @@ data class DrawingEditorUiState(
 
 class DrawingEditorViewModel(
     private val drawingRepository: DrawingRepository,
-    savedStateHandle: SavedStateHandle
+    private val editorId: String
 ) : ViewModel() {
-    private val editorId = AppRoute.DrawingEditor.from(savedStateHandle)?.noteId
 
     private val _uiState = MutableStateFlow(DrawingEditorUiState(drawingId = editorId))
     val uiState: StateFlow<DrawingEditorUiState> = _uiState.asStateFlow()
@@ -101,7 +98,7 @@ class DrawingEditorViewModel(
     }
 
     private fun observeDrawing() {
-        val id = editorId ?: return
+        val id = editorId
         viewModelScope.launch {
             drawingRepository.observeById(id).collectLatest { drawing ->
                 if (drawing != null) {
@@ -120,11 +117,11 @@ class DrawingEditorViewModel(
     private fun observeAutoSave() {
         viewModelScope.launch {
             uiState
-                .filter { !it.drawingId.isNullOrBlank() }
+                .filter { it.drawingId.isNotBlank() }
                 .debounce(AUTO_SAVE_DEBOUNCE_MS)
                 .collectLatest { state ->
                     if (state.title.isBlank() && state.strokes.isEmpty()) return@collectLatest
-                    val id = state.drawingId ?: return@collectLatest
+                    val id = state.drawingId
                     drawingRepository.upsert(
                         DrawingEntity(
                             id = id,
