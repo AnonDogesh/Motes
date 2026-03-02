@@ -143,6 +143,7 @@ fun ArchiveScreen(navController: NavController) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ArchiveCard(
     item: ArchiveItemUi,
