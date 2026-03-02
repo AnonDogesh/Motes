@@ -17,6 +17,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -49,6 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.navigation.AppRoute
+import com.example.motes.ui.components.FilterDialFab
 import com.example.motes.ui.components.SpeedDialFab
 import com.example.motes.ui.theme.MotesTheme
 
@@ -89,26 +91,8 @@ fun HomeScreen(
                 actions = {
                     if (inSelectionMode) {
                         TextButton(onClick = viewModel::clearSelection) { Text("Cancel") }
-                    } else {
-                        TextButton(onClick = viewModel::cycleFilter) {
-                            Text(
-                                text = when (filter) {
-                                    HomeFilter.ALL -> "Filter: All"
-                                    HomeFilter.NOTE -> "Filter: Notes"
-                                    HomeFilter.CHECKLIST -> "Filter: Checklists"
-                                    HomeFilter.DRAWING -> "Filter: Drawings"
-                                }
-                            )
-                        }
                     }
                 }
-            )
-        },
-        floatingActionButton = {
-            SpeedDialFab(
-                onNewNote = { viewModel.createNewNote { id -> navController.navigate(AppRoute.NoteEditor(id).route) } },
-                onNewChecklist = { viewModel.createNewChecklist { id -> navController.navigate(AppRoute.ChecklistEditor(id).route) } },
-                onNewDrawing = { viewModel.createNewDrawing { id -> navController.navigate(AppRoute.DrawingEditor(id).route) } }
             )
         },
         bottomBar = {
@@ -126,32 +110,49 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        LazyVerticalGrid(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            columns = GridCells.Adaptive(180.dp),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(items = items, key = { it.id }) { item ->
-                HomeCard(
-                    item = item,
-                    isSelected = selectedIds.contains(item.id),
-                    onClick = {
-                        if (inSelectionMode) {
-                            viewModel.onNoteClick(item.id)
-                        } else {
-                            val route = when (item.type) {
-                                HomeNoteType.NOTE -> AppRoute.NoteEditor(item.id.toLongOrNull() ?: -1L).route
-                                HomeNoteType.CHECKLIST -> AppRoute.ChecklistEditor(item.id).route
-                                HomeNoteType.DRAWING -> AppRoute.DrawingEditor(item.id).route
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyVerticalGrid(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                columns = GridCells.Adaptive(180.dp),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(items = items, key = { it.id }) { item ->
+                    HomeCard(
+                        item = item,
+                        isSelected = selectedIds.contains(item.id),
+                        onClick = {
+                            if (inSelectionMode) {
+                                viewModel.onNoteClick(item.id)
+                            } else {
+                                val route = when (item.type) {
+                                    HomeNoteType.NOTE -> AppRoute.NoteEditor(item.id.toLongOrNull() ?: -1L).route
+                                    HomeNoteType.CHECKLIST -> AppRoute.ChecklistEditor(item.id).route
+                                    HomeNoteType.DRAWING -> AppRoute.DrawingEditor(item.id).route
+                                }
+                                navController.navigate(route)
                             }
-                            navController.navigate(route)
-                        }
-                    },
-                    onLongClick = { viewModel.onNoteLongPress(item.id) }
+                        },
+                        onLongClick = { viewModel.onNoteLongPress(item.id) }
+                    )
+                }
+            }
+
+            if (!inSelectionMode) {
+                FilterDialFab(
+                    activeFilter = filter,
+                    onNotes = { viewModel.setFilter(HomeFilter.NOTE) },
+                    onChecklists = { viewModel.setFilter(HomeFilter.CHECKLIST) },
+                    onDrawings = { viewModel.setFilter(HomeFilter.DRAWING) },
+                    onArchive = {}
+                )
+                SpeedDialFab(
+                    onNewNote = { viewModel.createNewNote { id -> navController.navigate(AppRoute.NoteEditor(id).route) } },
+                    onNewChecklist = { viewModel.createNewChecklist { id -> navController.navigate(AppRoute.ChecklistEditor(id).route) } },
+                    onNewDrawing = { viewModel.createNewDrawing { id -> navController.navigate(AppRoute.DrawingEditor(id).route) } }
                 )
             }
         }

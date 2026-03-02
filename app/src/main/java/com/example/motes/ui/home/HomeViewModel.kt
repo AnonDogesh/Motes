@@ -114,14 +114,9 @@ class HomeViewModel(
         initialValue = emptyList()
     )
 
-    fun cycleFilter() {
-        _filter.update {
-            when (it) {
-                HomeFilter.ALL -> HomeFilter.NOTE
-                HomeFilter.NOTE -> HomeFilter.CHECKLIST
-                HomeFilter.CHECKLIST -> HomeFilter.DRAWING
-                HomeFilter.DRAWING -> HomeFilter.ALL
-            }
+    fun setFilter(filter: HomeFilter) {
+        _filter.update { current ->
+            if (current == filter) HomeFilter.ALL else filter
         }
     }
 
