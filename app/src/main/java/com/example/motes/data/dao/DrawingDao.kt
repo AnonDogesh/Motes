@@ -15,6 +15,12 @@ interface DrawingDao {
     @Delete
     suspend fun delete(drawing: DrawingEntity)
 
+    @Query("DELETE FROM drawings WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("UPDATE drawings SET isArchived = :archived, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun setArchived(id: String, archived: Boolean, updatedAt: Long)
+
     @Query("SELECT * FROM drawings WHERE id = :id LIMIT 1")
     fun observeById(id: String): Flow<DrawingEntity?>
 

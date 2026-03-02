@@ -22,4 +22,12 @@ class DefaultDrawingRepository(
     override suspend fun delete(drawing: DrawingEntity) {
         drawingDao.delete(drawing)
     }
+
+    override suspend fun restore(id: String) {
+        drawingDao.setArchived(id = id, archived = false, updatedAt = System.currentTimeMillis())
+    }
+
+    override suspend fun deletePermanently(id: String) {
+        drawingDao.deleteById(id)
+    }
 }

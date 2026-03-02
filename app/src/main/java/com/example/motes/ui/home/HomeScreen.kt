@@ -147,7 +147,7 @@ fun HomeScreen(
                     onNotes = { viewModel.setFilter(HomeFilter.NOTE) },
                     onChecklists = { viewModel.setFilter(HomeFilter.CHECKLIST) },
                     onDrawings = { viewModel.setFilter(HomeFilter.DRAWING) },
-                    onArchive = {}
+                    onArchive = { navController.navigate(AppRoute.Archive.route) }
                 )
                 SpeedDialFab(
                     onNewNote = { viewModel.createNewNote { id -> navController.navigate(AppRoute.NoteEditor(id).route) } },
