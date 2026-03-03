@@ -86,7 +86,7 @@ fun HomeScreen(
     val filter by viewModel.filter.collectAsState()
 
     val selectionMode = uiMode as? UiMode.Selection
-    val selectedIds = selectionMode?.selectedIds.orEmpty()
+    val selectedKeys = selectionMode?.selectedKeys.orEmpty()
     val inSelectionMode = selectionMode != null
 
     BackHandler(enabled = inSelectionMode) {
@@ -98,7 +98,7 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (inSelectionMode) "${selectedIds.size} selected" else "Motes",
+                        if (inSelectionMode) "${selectedKeys.size} selected" else "Motes",
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -148,10 +148,10 @@ fun HomeScreen(
                 items(items = items, key = { it.id }) { item ->
                     HomeCard(
                         item = item,
-                        isSelected = selectedIds.contains(item.id),
+                        isSelected = selectedKeys.contains(item.selectionKey),
                         onClick = {
                             if (inSelectionMode) {
-                                viewModel.onNoteClick(item.id)
+                                viewModel.onNoteClick(item.selectionKey)
                             } else {
                                 val route = when (item.type) {
                                     HomeNoteType.NOTE -> AppRoute.NoteEditor(item.id.toLongOrNull() ?: -1L).route
@@ -161,7 +161,7 @@ fun HomeScreen(
                                 navController.navigate(route)
                             }
                         },
-                        onLongClick = { viewModel.onNoteLongPress(item.id) }
+                        onLongClick = { viewModel.onNoteLongPress(item.selectionKey) }
                     )
                 }
             }

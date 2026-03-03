@@ -33,6 +33,7 @@ enum class HomeFilter {
 }
 
 data class HomeListItem(
+    val selectionKey: String,
     val id: String,
     val title: String,
     val subtitle: String,
@@ -44,7 +45,7 @@ data class HomeListItem(
 
 sealed class UiMode {
     data object Normal : UiMode()
-    data class Selection(val selectedIds: Set<String>) : UiMode()
+    data class Selection(val selectedKeys: Set<String>) : UiMode()
 }
 
 class HomeViewModel(
@@ -84,6 +85,7 @@ class HomeViewModel(
         notes.map { list ->
             list.map { note ->
                 HomeListItem(
+                    selectionKey = "note:${note.id}",
                     id = note.id.toString(),
                     title = note.title.ifBlank { "Untitled note" },
                     subtitle = notePreview(note.content),
@@ -98,6 +100,7 @@ class HomeViewModel(
                 val totalCount = checklist.items.size
                 val progress = if (totalCount == 0) 0f else checkedCount.toFloat() / totalCount.toFloat()
                 HomeListItem(
+                    selectionKey = "checklist:${checklist.id}",
                     id = checklist.id,
                     title = checklist.title.ifBlank { "Untitled checklist" },
                     subtitle = checklist.items.joinToString(" ") { it.text }.take(100).ifBlank { "(empty checklist)" },
@@ -111,6 +114,7 @@ class HomeViewModel(
         drawings.map { list ->
             list.map { drawing ->
                 HomeListItem(
+                    selectionKey = "drawing:${drawing.id}",
                     id = drawing.id,
                     title = drawing.title.ifBlank { "Untitled drawing" },
                     subtitle = "${drawing.strokePaths.size} stroke(s)",
@@ -141,13 +145,13 @@ class HomeViewModel(
         }
     }
 
-    fun onNoteClick(id: String) {
+    fun onNoteClick(selectionKey: String) {
         _uiMode.update { mode ->
             when (mode) {
                 UiMode.Normal -> mode
                 is UiMode.Selection -> {
-                    val updated = mode.selectedIds.toMutableSet().apply {
-                        if (!add(id)) remove(id)
+                    val updated = mode.selectedKeys.toMutableSet().apply {
+                        if (!add(selectionKey)) remove(selectionKey)
                     }
                     if (updated.isEmpty()) UiMode.Normal else UiMode.Selection(updated)
                 }
@@ -155,13 +159,13 @@ class HomeViewModel(
         }
     }
 
-    fun onNoteLongPress(id: String) {
+    fun onNoteLongPress(selectionKey: String) {
         _uiMode.update { mode ->
             when (mode) {
-                UiMode.Normal -> UiMode.Selection(setOf(id))
+                UiMode.Normal -> UiMode.Selection(setOf(selectionKey))
                 is UiMode.Selection -> {
-                    val updated = mode.selectedIds.toMutableSet().apply {
-                        if (!add(id)) remove(id)
+                    val updated = mode.selectedKeys.toMutableSet().apply {
+                        if (!add(selectionKey)) remove(selectionKey)
                     }
                     if (updated.isEmpty()) UiMode.Normal else UiMode.Selection(updated)
                 }
@@ -174,20 +178,29 @@ class HomeViewModel(
     }
 
     fun archiveSelected() {
-        val selected = (uiMode.value as? UiMode.Selection)?.selectedIds.orEmpty()
+        val selected = selectedItems()
         if (selected.isEmpty()) return
 
         viewModelScope.launch {
             val now = System.currentTimeMillis()
-            selected.forEach { id ->
-                notes.value.firstOrNull { it.id.toString() == id }?.let { note ->
-                    noteRepository.update(note.copy(isArchived = true, updatedAt = now))
-                }
-                checklists.value.firstOrNull { it.id == id }?.let { checklist ->
-                    checklistRepository.upsert(checklist.copy(isArchived = true, updatedAt = now))
-                }
-                drawings.value.firstOrNull { it.id == id }?.let { drawing ->
-                    drawingRepository.upsert(drawing.copy(isArchived = true, updatedAt = now))
+            selected.forEach { item ->
+                when (item.type) {
+                    HomeNoteType.NOTE -> {
+                        val noteId = item.id.toLongOrNull() ?: return@forEach
+                        notes.value.firstOrNull { it.id == noteId }?.let { note ->
+                            noteRepository.update(note.copy(isArchived = true, updatedAt = now))
+                        }
+                    }
+                    HomeNoteType.CHECKLIST -> {
+                        checklists.value.firstOrNull { it.id == item.id }?.let { checklist ->
+                            checklistRepository.upsert(checklist.copy(isArchived = true, updatedAt = now))
+                        }
+                    }
+                    HomeNoteType.DRAWING -> {
+                        drawings.value.firstOrNull { it.id == item.id }?.let { drawing ->
+                            drawingRepository.upsert(drawing.copy(isArchived = true, updatedAt = now))
+                        }
+                    }
                 }
             }
             clearSelection()
@@ -195,25 +208,26 @@ class HomeViewModel(
     }
 
     fun deleteSelected() {
-        val selected = (uiMode.value as? UiMode.Selection)?.selectedIds.orEmpty()
+        val selected = selectedItems()
         if (selected.isEmpty()) return
 
         viewModelScope.launch {
-            selected.forEach { id ->
-                id.toLongOrNull()?.let { noteRepository.deletePermanently(it) }
-                checklistRepository.deletePermanently(id)
-                drawingRepository.deletePermanently(id)
+            selected.forEach { item ->
+                when (item.type) {
+                    HomeNoteType.NOTE -> item.id.toLongOrNull()?.let { noteRepository.deletePermanently(it) }
+                    HomeNoteType.CHECKLIST -> checklistRepository.deletePermanently(item.id)
+                    HomeNoteType.DRAWING -> drawingRepository.deletePermanently(item.id)
+                }
             }
             clearSelection()
         }
     }
 
     fun buildShareTextForSelection(): String {
-        val selected = (uiMode.value as? UiMode.Selection)?.selectedIds.orEmpty()
+        val selected = selectedItems()
         if (selected.isEmpty()) return ""
 
-        val selectedItems = items.value.filter { it.id in selected }
-        return selectedItems.joinToString(separator = "\n\n") { item ->
+        return selected.joinToString(separator = "\n\n") { item ->
             val type = when (item.type) {
                 HomeNoteType.NOTE -> "Note"
                 HomeNoteType.CHECKLIST -> "Checklist"
@@ -221,6 +235,12 @@ class HomeViewModel(
             }
             "[$type] ${item.title}\n${item.subtitle}"
         }
+    }
+
+    private fun selectedItems(): List<HomeListItem> {
+        val selectedKeys = (uiMode.value as? UiMode.Selection)?.selectedKeys.orEmpty()
+        if (selectedKeys.isEmpty()) return emptyList()
+        return items.value.filter { it.selectionKey in selectedKeys }
     }
 
     fun createNewNote(onCreated: (Long) -> Unit) {
