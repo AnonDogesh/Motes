@@ -242,6 +242,19 @@ private fun HomeCard(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )
+            if (item.type == HomeNoteType.CHECKLIST) {
+                LinearProgressIndicator(
+                    progress = { item.checklistProgress ?: 0f },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+                Text(
+                    text = item.checklistCompletionLabel ?: "0 / 0 completed",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             if (item.isPinned) {
                 Text(
                     text = "Pinned",

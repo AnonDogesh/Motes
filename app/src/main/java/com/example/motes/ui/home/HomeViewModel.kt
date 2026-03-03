@@ -37,7 +37,9 @@ data class HomeListItem(
     val title: String,
     val subtitle: String,
     val isPinned: Boolean,
-    val type: HomeNoteType
+    val type: HomeNoteType,
+    val checklistProgress: Float? = null,
+    val checklistCompletionLabel: String? = null
 )
 
 sealed class UiMode {
@@ -70,7 +72,7 @@ class HomeViewModel(
                 HomeListItem(
                     id = note.id.toString(),
                     title = note.title.ifBlank { "Untitled note" },
-                    subtitle = note.content.take(100).ifBlank { "(empty note)" },
+                    subtitle = notePreview(note.content),
                     isPinned = note.isPinned,
                     type = HomeNoteType.NOTE
                 )
@@ -78,12 +80,17 @@ class HomeViewModel(
         },
         checklistRepository.observeActive().map { list ->
             list.map { checklist ->
+                val checkedCount = checklist.items.count { it.isChecked }
+                val totalCount = checklist.items.size
+                val progress = if (totalCount == 0) 0f else checkedCount.toFloat() / totalCount.toFloat()
                 HomeListItem(
                     id = checklist.id,
                     title = checklist.title.ifBlank { "Untitled checklist" },
                     subtitle = checklist.items.joinToString(" ") { it.text }.take(100).ifBlank { "(empty checklist)" },
                     isPinned = checklist.isPinned,
-                    type = HomeNoteType.CHECKLIST
+                    type = HomeNoteType.CHECKLIST,
+                    checklistProgress = progress,
+                    checklistCompletionLabel = "$checkedCount / $totalCount completed"
                 )
             }
         },
@@ -191,6 +198,19 @@ class HomeViewModel(
             drawingRepository.upsert(drawing)
             onCreated(drawing.id)
         }
+    }
+
+    private fun notePreview(content: String): String {
+        return content
+            .lineSequence()
+            .filterNot { line ->
+                val trimmed = line.trim()
+                trimmed.startsWith("[[image:") && trimmed.endsWith("]]")
+            }
+            .joinToString("\n")
+            .trim()
+            .take(100)
+            .ifBlank { "(empty note)" }
     }
 
     private fun summarizeChecklist(checklist: ChecklistEntity): String {

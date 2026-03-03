@@ -1,5 +1,8 @@
 package com.example.motes.ui.editor_note
 
+import android.widget.ImageView
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +23,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +43,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -69,6 +75,9 @@ fun NoteEditorScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) viewModel.addImage(uri.toString())
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -91,6 +100,11 @@ fun NoteEditorScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { imagePicker.launch("image/*") }) {
+                        Icon(Icons.Default.Image, contentDescription = "Add image")
                     }
                 }
             )
@@ -124,6 +138,45 @@ fun NoteEditorScreen(
             )
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f))
+
+            if (uiState.imageUris.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    uiState.imageUris.forEach { imageUri ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(SurfaceMedium, RoundedCornerShape(16.dp))
+                                .padding(8.dp)
+                        ) {
+                            AndroidView(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp),
+                                factory = { ctx ->
+                                    ImageView(ctx).apply {
+                                        scaleType = ImageView.ScaleType.CENTER_CROP
+                                        adjustViewBounds = true
+                                    }
+                                },
+                                update = { imageView ->
+                                    imageView.setImageURI(android.net.Uri.parse(imageUri))
+                                }
+                            )
+                            IconButton(
+                                onClick = { viewModel.removeImage(imageUri) },
+                                modifier = Modifier.align(Alignment.TopEnd)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Remove image")
+                            }
+                        }
+                    }
+                }
+            }
 
             BasicTextField(
                 value = uiState.body,
