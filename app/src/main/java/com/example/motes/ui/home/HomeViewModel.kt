@@ -60,6 +60,20 @@ class HomeViewModel(
             initialValue = emptyList()
         )
 
+    private val checklists: StateFlow<List<ChecklistEntity>> =
+        checklistRepository.observeActive().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    private val drawings: StateFlow<List<DrawingEntity>> =
+        drawingRepository.observeActive().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
     private val _uiMode = MutableStateFlow<UiMode>(UiMode.Normal)
     val uiMode: StateFlow<UiMode> = _uiMode.asStateFlow()
 
@@ -67,7 +81,7 @@ class HomeViewModel(
     val filter: StateFlow<HomeFilter> = _filter.asStateFlow()
 
     val items: StateFlow<List<HomeListItem>> = combine(
-        noteRepository.observeActive().map { list ->
+        notes.map { list ->
             list.map { note ->
                 HomeListItem(
                     id = note.id.toString(),
@@ -78,7 +92,7 @@ class HomeViewModel(
                 )
             }
         },
-        checklistRepository.observeActive().map { list ->
+        checklists.map { list ->
             list.map { checklist ->
                 val checkedCount = checklist.items.count { it.isChecked }
                 val totalCount = checklist.items.size
@@ -94,7 +108,7 @@ class HomeViewModel(
                 )
             }
         },
-        drawingRepository.observeActive().map { list ->
+        drawings.map { list ->
             list.map { drawing ->
                 HomeListItem(
                     id = drawing.id,
@@ -159,10 +173,55 @@ class HomeViewModel(
         _uiMode.value = UiMode.Normal
     }
 
-    fun onArchiveSelected() {}
-    fun onDeleteSelected() {}
-    fun onPinSelected() {}
-    fun onShareSelected() {}
+    fun archiveSelected() {
+        val selected = (uiMode.value as? UiMode.Selection)?.selectedIds.orEmpty()
+        if (selected.isEmpty()) return
+
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            selected.forEach { id ->
+                notes.value.firstOrNull { it.id.toString() == id }?.let { note ->
+                    noteRepository.update(note.copy(isArchived = true, updatedAt = now))
+                }
+                checklists.value.firstOrNull { it.id == id }?.let { checklist ->
+                    checklistRepository.upsert(checklist.copy(isArchived = true, updatedAt = now))
+                }
+                drawings.value.firstOrNull { it.id == id }?.let { drawing ->
+                    drawingRepository.upsert(drawing.copy(isArchived = true, updatedAt = now))
+                }
+            }
+            clearSelection()
+        }
+    }
+
+    fun deleteSelected() {
+        val selected = (uiMode.value as? UiMode.Selection)?.selectedIds.orEmpty()
+        if (selected.isEmpty()) return
+
+        viewModelScope.launch {
+            selected.forEach { id ->
+                id.toLongOrNull()?.let { noteRepository.deletePermanently(it) }
+                checklistRepository.deletePermanently(id)
+                drawingRepository.deletePermanently(id)
+            }
+            clearSelection()
+        }
+    }
+
+    fun buildShareTextForSelection(): String {
+        val selected = (uiMode.value as? UiMode.Selection)?.selectedIds.orEmpty()
+        if (selected.isEmpty()) return ""
+
+        val selectedItems = items.value.filter { it.id in selected }
+        return selectedItems.joinToString(separator = "\n\n") { item ->
+            val type = when (item.type) {
+                HomeNoteType.NOTE -> "Note"
+                HomeNoteType.CHECKLIST -> "Checklist"
+                HomeNoteType.DRAWING -> "Drawing"
+            }
+            "[$type] ${item.title}\n${item.subtitle}"
+        }
+    }
 
     fun createNewNote(onCreated: (Long) -> Unit) {
         onCreated(-1L)
@@ -211,11 +270,6 @@ class HomeViewModel(
             .trim()
             .take(100)
             .ifBlank { "(empty note)" }
-    }
-
-    private fun summarizeChecklist(checklist: ChecklistEntity): String {
-        val done = checklist.items.count { it.isChecked }
-        return if (checklist.items.isEmpty()) "No checklist items" else "$done/${checklist.items.size} done"
     }
 }
 
