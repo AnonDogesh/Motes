@@ -90,7 +90,7 @@ class HomeViewModel(
                     isPinned = checklist.isPinned,
                     type = HomeNoteType.CHECKLIST,
                     checklistProgress = progress,
-                    checklistCompletionLabel = "$checkedCount / $totalCount completed"
+                    checklistCompletionLabel = "$checkedCount checked • ${totalCount - checkedCount} left"
                 )
             }
         },

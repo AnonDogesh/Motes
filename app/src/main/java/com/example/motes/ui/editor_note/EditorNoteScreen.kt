@@ -1,5 +1,6 @@
 package com.example.motes.ui.editor_note
 
+import android.net.Uri
 import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -54,6 +55,8 @@ import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.SurfaceHigh
 import com.example.motes.ui.theme.SurfaceMedium
+import java.io.File
+import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +79,10 @@ fun NoteEditorScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) viewModel.addImage(uri.toString())
+        if (uri != null) {
+            val persisted = persistImageToAppStorage(context, uri)
+            viewModel.addImage(persisted)
+        }
     }
 
     Scaffold(
@@ -242,4 +248,19 @@ private fun FormatButton(
             )
         )
     }
+}
+
+
+private fun persistImageToAppStorage(context: android.content.Context, sourceUri: Uri): String {
+    val imagesDir = File(context.filesDir, "note_images").apply { mkdirs() }
+    val targetFile = File(imagesDir, "img_${System.currentTimeMillis()}.jpg")
+
+    context.contentResolver.openInputStream(sourceUri).use { input ->
+        requireNotNull(input) { "Unable to read selected image." }
+        FileOutputStream(targetFile).use { output ->
+            input.copyTo(output)
+        }
+    }
+
+    return Uri.fromFile(targetFile).toString()
 }
