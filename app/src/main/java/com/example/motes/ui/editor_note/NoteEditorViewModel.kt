@@ -24,7 +24,10 @@ data class NoteEditorUiState(
     val title: String = "",
     val body: String = "",
     val imageUris: List<String> = emptyList(),
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val isBoldEnabled: Boolean = false,
+    val isItalicEnabled: Boolean = false,
+    val isUnderlineEnabled: Boolean = false
 )
 
 class NoteEditorViewModel(
@@ -64,6 +67,18 @@ class NoteEditorViewModel(
     fun removeImage(uri: String) {
         _uiState.update { state -> state.copy(imageUris = state.imageUris.filterNot { it == uri }) }
         scheduleSave()
+    }
+
+    fun toggleBold() {
+        _uiState.update { it.copy(isBoldEnabled = !it.isBoldEnabled) }
+    }
+
+    fun toggleItalic() {
+        _uiState.update { it.copy(isItalicEnabled = !it.isItalicEnabled) }
+    }
+
+    fun toggleUnderline() {
+        _uiState.update { it.copy(isUnderlineEnabled = !it.isUnderlineEnabled) }
     }
 
     private fun observeNote(noteId: Long) {

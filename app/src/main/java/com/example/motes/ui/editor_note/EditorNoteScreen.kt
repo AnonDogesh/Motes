@@ -5,6 +5,7 @@ import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +26,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -40,8 +40,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -85,6 +87,15 @@ fun NoteEditorScreen(
         }
     }
 
+    val noteBodyStyle = MaterialTheme.typography.bodyLarge.merge(
+        TextStyle(
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = if (uiState.isBoldEnabled) FontWeight.Bold else FontWeight.Normal,
+            fontStyle = if (uiState.isItalicEnabled) FontStyle.Italic else FontStyle.Normal,
+            textDecoration = if (uiState.isUnderlineEnabled) TextDecoration.Underline else TextDecoration.None
+        )
+    )
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -107,15 +118,20 @@ fun NoteEditorScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                },
-                actions = {
-                    IconButton(onClick = { imagePicker.launch("image/*") }) {
-                        Icon(Icons.Default.Image, contentDescription = "Add image")
-                    }
                 }
             )
         },
-        bottomBar = { NoteFormattingToolbar() }
+        bottomBar = {
+            NoteFormattingToolbar(
+                isBoldEnabled = uiState.isBoldEnabled,
+                isItalicEnabled = uiState.isItalicEnabled,
+                isUnderlineEnabled = uiState.isUnderlineEnabled,
+                onToggleBold = viewModel::toggleBold,
+                onToggleItalic = viewModel::toggleItalic,
+                onToggleUnderline = viewModel::toggleUnderline,
+                onAddImage = { imagePicker.launch("image/*") }
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -170,7 +186,7 @@ fun NoteEditorScreen(
                                     }
                                 },
                                 update = { imageView ->
-                                    imageView.setImageURI(android.net.Uri.parse(imageUri))
+                                    imageView.setImageURI(Uri.parse(imageUri))
                                 }
                             )
                             IconButton(
@@ -191,7 +207,7 @@ fun NoteEditorScreen(
                     .fillMaxWidth()
                     .padding(top = 14.dp)
                     .height(620.dp),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
+                textStyle = noteBodyStyle,
                 cursorBrush = SolidColor(Accent),
                 decorationBox = { innerTextField ->
                     if (uiState.body.isBlank()) {
@@ -205,7 +221,15 @@ fun NoteEditorScreen(
 }
 
 @Composable
-private fun NoteFormattingToolbar() {
+private fun NoteFormattingToolbar(
+    isBoldEnabled: Boolean,
+    isItalicEnabled: Boolean,
+    isUnderlineEnabled: Boolean,
+    onToggleBold: () -> Unit,
+    onToggleItalic: () -> Unit,
+    onToggleUnderline: () -> Unit,
+    onAddImage: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -215,12 +239,12 @@ private fun NoteFormattingToolbar() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        FormatButton(label = "B")
-        FormatButton(label = "I", italic = true)
-        FormatButton(label = "U")
+        FormatButton(label = "B", isSelected = isBoldEnabled, onClick = onToggleBold)
+        FormatButton(label = "I", italic = true, isSelected = isItalicEnabled, onClick = onToggleItalic)
+        FormatButton(label = "U", underline = true, isSelected = isUnderlineEnabled, onClick = onToggleUnderline)
         Spacer(modifier = Modifier.width(8.dp))
         FloatingActionButton(
-            onClick = {},
+            onClick = onAddImage,
             containerColor = Accent,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.size(42.dp),
@@ -234,22 +258,30 @@ private fun NoteFormattingToolbar() {
 @Composable
 private fun FormatButton(
     label: String,
-    italic: Boolean = false
+    italic: Boolean = false,
+    underline: Boolean = false,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
-            .background(SurfaceHigh, RoundedCornerShape(10.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else SurfaceHigh,
+                RoundedCornerShape(10.dp)
+            )
+            .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge.copy(
-                fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal
+                fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
+                textDecoration = if (underline) TextDecoration.Underline else TextDecoration.None,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         )
     }
 }
-
 
 private fun persistImageToAppStorage(context: android.content.Context, sourceUri: Uri): String {
     val imagesDir = File(context.filesDir, "note_images").apply { mkdirs() }
