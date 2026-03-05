@@ -37,6 +37,7 @@ data class HomeListItem(
     val id: String,
     val title: String,
     val subtitle: String,
+    val previewImageUri: String? = null,
     val isPinned: Boolean,
     val type: HomeNoteType,
     val checklistProgress: Float? = null,
@@ -89,6 +90,7 @@ class HomeViewModel(
                     id = note.id.toString(),
                     title = note.title.ifBlank { "Untitled note" },
                     subtitle = notePreview(note.content),
+                    previewImageUri = firstImageUri(note.content),
                     isPinned = note.isPinned,
                     type = HomeNoteType.NOTE
                 )
@@ -277,6 +279,16 @@ class HomeViewModel(
             drawingRepository.upsert(drawing)
             onCreated(drawing.id)
         }
+    }
+
+    private fun firstImageUri(content: String): String? {
+        return content
+            .lineSequence()
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("[[image:") && it.endsWith("]]") }
+            ?.removePrefix("[[image:")
+            ?.removeSuffix("]]")
+            ?.takeIf { it.isNotBlank() }
     }
 
     private fun notePreview(content: String): String {
