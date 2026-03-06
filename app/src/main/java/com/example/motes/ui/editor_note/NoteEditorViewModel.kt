@@ -172,6 +172,6 @@ class NoteEditorViewModel(
             }
         }
 
-        return bodyLines.joinToString("\n").trimEnd() to imageUris
+        return bodyLines.joinToString("\n") to imageUris
     }
 }

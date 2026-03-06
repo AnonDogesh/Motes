@@ -1,6 +1,13 @@
 package com.example.motes.ui.editor_note
 
+import android.graphics.Typeface
 import android.net.Uri
+import android.text.Editable
+import android.text.Spanned
+import android.text.TextWatcher
+import android.text.style.StyleSpan
+import android.text.style.UnderlineSpan
+import android.widget.EditText
 import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,14 +43,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -80,6 +90,16 @@ fun NoteEditorScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var bodyText by remember { mutableStateOf(uiState.body) }
+    var bodyEditText by remember { mutableStateOf<EditText?>(null) }
+    var lastChangeStart by remember { mutableIntStateOf(0) }
+    var lastChangeBefore by remember { mutableIntStateOf(0) }
+    var lastChangeCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(uiState.noteId) {
+        bodyText = uiState.body
+    }
+
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             val persisted = persistImageToAppStorage(context, uri)
@@ -87,14 +107,10 @@ fun NoteEditorScreen(
         }
     }
 
-    val noteBodyStyle = MaterialTheme.typography.bodyLarge.merge(
-        TextStyle(
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = if (uiState.isBoldEnabled) FontWeight.Bold else FontWeight.Normal,
-            fontStyle = if (uiState.isItalicEnabled) FontStyle.Italic else FontStyle.Normal,
-            textDecoration = if (uiState.isUnderlineEnabled) TextDecoration.Underline else TextDecoration.None
-        )
-    )
+    val currentBoldEnabled = rememberUpdatedState(uiState.isBoldEnabled)
+    val currentItalicEnabled = rememberUpdatedState(uiState.isItalicEnabled)
+    val currentUnderlineEnabled = rememberUpdatedState(uiState.isUnderlineEnabled)
+    val currentOnBodyChanged = rememberUpdatedState(viewModel::onBodyChanged)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -126,9 +142,30 @@ fun NoteEditorScreen(
                 isBoldEnabled = uiState.isBoldEnabled,
                 isItalicEnabled = uiState.isItalicEnabled,
                 isUnderlineEnabled = uiState.isUnderlineEnabled,
-                onToggleBold = viewModel::toggleBold,
-                onToggleItalic = viewModel::toggleItalic,
-                onToggleUnderline = viewModel::toggleUnderline,
+                onToggleBold = {
+                    val editText = bodyEditText
+                    if (editText != null && editText.selectionStart != editText.selectionEnd) {
+                        applyStyleToSelection(editText.text, editText.selectionStart, editText.selectionEnd, StyleSpan(Typeface.BOLD))
+                    } else {
+                        viewModel.toggleBold()
+                    }
+                },
+                onToggleItalic = {
+                    val editText = bodyEditText
+                    if (editText != null && editText.selectionStart != editText.selectionEnd) {
+                        applyStyleToSelection(editText.text, editText.selectionStart, editText.selectionEnd, StyleSpan(Typeface.ITALIC))
+                    } else {
+                        viewModel.toggleItalic()
+                    }
+                },
+                onToggleUnderline = {
+                    val editText = bodyEditText
+                    if (editText != null && editText.selectionStart != editText.selectionEnd) {
+                        applyStyleToSelection(editText.text, editText.selectionStart, editText.selectionEnd, UnderlineSpan())
+                    } else {
+                        viewModel.toggleUnderline()
+                    }
+                },
                 onAddImage = { imagePicker.launch("image/*") }
             )
         }
@@ -182,7 +219,6 @@ fun NoteEditorScreen(
                                 factory = { ctx ->
                                     ImageView(ctx).apply {
                                         scaleType = ImageView.ScaleType.CENTER_CROP
-                                        adjustViewBounds = true
                                     }
                                 },
                                 update = { imageView ->
@@ -200,24 +236,62 @@ fun NoteEditorScreen(
                 }
             }
 
-            BasicTextField(
-                value = uiState.body,
-                onValueChange = viewModel::onBodyChanged,
+            AndroidView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 14.dp)
                     .height(620.dp),
-                textStyle = noteBodyStyle,
-                cursorBrush = SolidColor(Accent),
-                decorationBox = { innerTextField ->
-                    if (uiState.body.isBlank()) {
-                        Text("Start writing your note...", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
+                factory = { ctx ->
+                    EditText(ctx).apply {
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                        setTextColor(android.graphics.Color.parseColor("#E9EEF2"))
+                        hint = "Start writing your note..."
+                        textSize = 18f
+                        bodyEditText = this
+                        addTextChangedListener(object : TextWatcher {
+                            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+
+                            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                                lastChangeStart = start
+                                lastChangeBefore = before
+                                lastChangeCount = count
+                            }
+
+                            override fun afterTextChanged(s: Editable?) {
+                                if (s == null) return
+                                if (lastChangeCount > 0 && lastChangeBefore == 0) {
+                                    val end = (lastChangeStart + lastChangeCount).coerceAtMost(s.length)
+                                    if (currentBoldEnabled.value) {
+                                        s.setSpan(StyleSpan(Typeface.BOLD), lastChangeStart, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                                    }
+                                    if (currentItalicEnabled.value) {
+                                        s.setSpan(StyleSpan(Typeface.ITALIC), lastChangeStart, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                                    }
+                                    if (currentUnderlineEnabled.value) {
+                                        s.setSpan(UnderlineSpan(), lastChangeStart, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                                    }
+                                }
+                                bodyText = s.toString()
+                                currentOnBodyChanged.value(bodyText)
+                            }
+                        })
                     }
-                    innerTextField()
+                },
+                update = { editText ->
+                    if (editText.text.toString() != bodyText) {
+                        editText.setText(bodyText)
+                        editText.setSelection(bodyText.length)
+                    }
+                    bodyEditText = editText
                 }
             )
         }
     }
+}
+
+private fun applyStyleToSelection(editable: Editable, start: Int, end: Int, span: Any) {
+    if (start == end || start < 0 || end > editable.length) return
+    editable.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 }
 
 @Composable
@@ -240,9 +314,9 @@ private fun NoteFormattingToolbar(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         FormatButton(label = "B", isSelected = isBoldEnabled, onClick = onToggleBold)
-        FormatButton(label = "I", italic = true, isSelected = isItalicEnabled, onClick = onToggleItalic)
-        FormatButton(label = "U", underline = true, isSelected = isUnderlineEnabled, onClick = onToggleUnderline)
-        Spacer(modifier = Modifier.width(8.dp))
+        FormatButton(label = "I", isSelected = isItalicEnabled, onClick = onToggleItalic)
+        FormatButton(label = "U", isSelected = isUnderlineEnabled, onClick = onToggleUnderline)
+        Spacer(modifier = Modifier.weight(1f))
         FloatingActionButton(
             onClick = onAddImage,
             containerColor = Accent,
@@ -258,8 +332,6 @@ private fun NoteFormattingToolbar(
 @Composable
 private fun FormatButton(
     label: String,
-    italic: Boolean = false,
-    underline: Boolean = false,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -275,8 +347,6 @@ private fun FormatButton(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge.copy(
-                fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
-                textDecoration = if (underline) TextDecoration.Underline else TextDecoration.None,
                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         )

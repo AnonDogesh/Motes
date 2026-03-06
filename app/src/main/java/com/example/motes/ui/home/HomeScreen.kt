@@ -306,7 +306,6 @@ private fun HomeCard(
                         factory = { ctx ->
                             ImageView(ctx).apply {
                                 scaleType = ImageView.ScaleType.CENTER_CROP
-                                adjustViewBounds = true
                             }
                         },
                         update = { imageView ->
