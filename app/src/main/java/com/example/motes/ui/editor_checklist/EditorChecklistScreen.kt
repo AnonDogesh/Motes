@@ -1,6 +1,7 @@
 package com.example.motes.ui.editor_checklist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,15 +9,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -75,6 +84,7 @@ fun ChecklistEditorScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val checklistKey = uiState.checklistId.ifBlank { "new" }
     var newItemText by rememberSaveable(checklistKey) { mutableStateOf("") }
+    var showColorPicker by rememberSaveable(checklistKey) { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -98,6 +108,11 @@ fun ChecklistEditorScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                },
+                actions = {
+                    IconButton(onClick = { showColorPicker = true }) {
+                        Icon(Icons.Default.Palette, contentDescription = "Pick checklist color", tint = uiState.cardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
+                    }
                 }
             )
         },
@@ -112,6 +127,14 @@ fun ChecklistEditorScreen(
             )
         }
     ) { innerPadding ->
+        if (showColorPicker) {
+            ColorPickerDialogChecklist(
+                selectedColor = uiState.cardColor,
+                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                onDismiss = { showColorPicker = false }
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -246,6 +269,31 @@ private fun ChecklistRow(
             )
         }
     }
+}
+
+
+@Composable
+private fun ColorPickerDialogChecklist(
+    selectedColor: Long?,
+    onColorSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val palette = listOf(0xFFFFF9C4L,0xFFFFE0B2L,0xFFFFCDD2L,0xFFE1BEE7L,0xFFD1C4E9L,0xFFBBDEFBL,0xFFB2EBF2L,0xFFC8E6C9L,0xFFDCEDC8L,0xFFF0F4C3L,0xFFD7CCC8L,0xFFCFD8DCL)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select checklist color") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                TextButton(onClick = { onColorSelected(null) }) { Text("Default") }
+                LazyVerticalGrid(columns = GridCells.Fixed(4), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(120.dp)) {
+                    gridItems(palette) { colorLong ->
+                        Box(modifier = Modifier.size(if (selectedColor == colorLong) 30.dp else 26.dp).background(Color(colorLong), RoundedCornerShape(100)).clickable { onColorSelected(colorLong) })
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
 }
 
 @Composable

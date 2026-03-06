@@ -38,6 +38,7 @@ data class HomeListItem(
     val title: String,
     val subtitle: String,
     val previewImageUri: String? = null,
+    val cardColor: Long? = null,
     val isPinned: Boolean,
     val type: HomeNoteType,
     val checklistProgress: Float? = null,
@@ -91,6 +92,7 @@ class HomeViewModel(
                     title = note.title.ifBlank { "Untitled note" },
                     subtitle = notePreview(note.content),
                     previewImageUri = firstImageUri(note.content),
+                    cardColor = note.cardColor,
                     isPinned = note.isPinned,
                     type = HomeNoteType.NOTE
                 )
@@ -106,6 +108,7 @@ class HomeViewModel(
                     id = checklist.id,
                     title = checklist.title.ifBlank { "Untitled checklist" },
                     subtitle = checklist.items.joinToString(" ") { it.text }.take(100).ifBlank { "(empty checklist)" },
+                    cardColor = checklist.cardColor,
                     isPinned = checklist.isPinned,
                     type = HomeNoteType.CHECKLIST,
                     checklistProgress = progress,
@@ -120,6 +123,7 @@ class HomeViewModel(
                     id = drawing.id,
                     title = drawing.title.ifBlank { "Untitled drawing" },
                     subtitle = "${drawing.strokePaths.size} stroke(s)",
+                    cardColor = drawing.cardColor,
                     isPinned = drawing.isPinned,
                     type = HomeNoteType.DRAWING
                 )
@@ -258,7 +262,8 @@ class HomeViewModel(
                 createdAt = now,
                 updatedAt = now,
                 isPinned = false,
-                isArchived = false
+                isArchived = false,
+                cardColor = null
             )
             checklistRepository.upsert(checklist)
             onCreated(checklist.id)
@@ -274,7 +279,8 @@ class HomeViewModel(
                 createdAt = now,
                 updatedAt = now,
                 isPinned = false,
-                isArchived = false
+                isArchived = false,
+                cardColor = null
             )
             drawingRepository.upsert(drawing)
             onCreated(drawing.id)

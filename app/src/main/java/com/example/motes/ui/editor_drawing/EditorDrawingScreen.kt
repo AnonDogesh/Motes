@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +31,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +75,7 @@ fun DrawingEditorScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentStrokePoints = remember { mutableStateListOf<DrawPoint>() }
+    var showColorPicker by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -100,6 +104,9 @@ fun DrawingEditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showColorPicker = true }) {
+                        Icon(Icons.Default.Palette, contentDescription = "Pick drawing color", tint = uiState.cardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
+                    }
                     TextButton(onClick = viewModel::undo) { Text("Undo") }
                     TextButton(onClick = viewModel::clear) { Text("Clear") }
                 }
@@ -116,6 +123,14 @@ fun DrawingEditorScreen(
             )
         }
     ) { innerPadding ->
+        if (showColorPicker) {
+            ColorPickerDialogDrawing(
+                selectedColor = uiState.cardColor,
+                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                onDismiss = { showColorPicker = false }
+            )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -171,6 +186,31 @@ fun DrawingEditorScreen(
             }
         }
     }
+}
+
+
+@Composable
+private fun ColorPickerDialogDrawing(
+    selectedColor: Long?,
+    onColorSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val palette = listOf(0xFFFFF9C4L,0xFFFFE0B2L,0xFFFFCDD2L,0xFFE1BEE7L,0xFFD1C4E9L,0xFFBBDEFBL,0xFFB2EBF2L,0xFFC8E6C9L,0xFFDCEDC8L,0xFFF0F4C3L,0xFFD7CCC8L,0xFFCFD8DCL)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select drawing color") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                TextButton(onClick = { onColorSelected(null) }) { Text("Default") }
+                LazyVerticalGrid(columns = GridCells.Fixed(4), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(120.dp)) {
+                    items(palette) { colorLong ->
+                        Box(modifier = Modifier.size(if (selectedColor == colorLong) 30.dp else 26.dp).background(Color(colorLong), CircleShape).clickable { onColorSelected(colorLong) })
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
 }
 
 @Composable

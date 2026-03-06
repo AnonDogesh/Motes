@@ -40,7 +40,8 @@ data class DrawingEditorUiState(
     val strokeWidth: Float = 8f,
     val selectedTool: DrawingTool = DrawingTool.Brush,
     val lastEditedLabel: String = "Not saved yet",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val cardColor: Long? = null
 )
 
 class DrawingEditorViewModel(
@@ -70,6 +71,10 @@ class DrawingEditorViewModel(
 
     fun setTitle(value: String) {
         _uiState.update { it.copy(title = value) }
+    }
+
+    fun setCardColor(color: Long?) {
+        _uiState.update { it.copy(cardColor = color) }
     }
 
     fun addStroke(points: List<DrawPoint>) {
@@ -106,7 +111,8 @@ class DrawingEditorViewModel(
                         it.copy(
                             title = drawing.title,
                             strokes = decodeStrokes(drawing.strokePaths),
-                            createdAt = drawing.createdAt
+                            createdAt = drawing.createdAt,
+                            cardColor = drawing.cardColor
                         )
                     }
                 }
@@ -130,7 +136,8 @@ class DrawingEditorViewModel(
                             createdAt = state.createdAt,
                             updatedAt = System.currentTimeMillis(),
                             isPinned = false,
-                            isArchived = false
+                            isArchived = false,
+                            cardColor = state.cardColor
                         )
                     )
                     _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }

@@ -16,7 +16,7 @@ import com.example.motes.data.entity.NoteEntity
         ChecklistEntity::class,
         DrawingEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(AppTypeConverters::class)

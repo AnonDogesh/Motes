@@ -25,6 +25,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,7 +36,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -53,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -95,6 +101,7 @@ fun NoteEditorScreen(
     var lastChangeStart by remember { mutableIntStateOf(0) }
     var lastChangeBefore by remember { mutableIntStateOf(0) }
     var lastChangeCount by remember { mutableIntStateOf(0) }
+    var showColorPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.noteId) {
         bodyText = uiState.body
@@ -134,6 +141,15 @@ fun NoteEditorScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    IconButton(onClick = { showColorPicker = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = "Pick note color",
+                            tint = uiState.cardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             )
         },
@@ -170,6 +186,14 @@ fun NoteEditorScreen(
             )
         }
     ) { innerPadding ->
+        if (showColorPicker) {
+            ColorPickerDialog(
+                selectedColor = uiState.cardColor,
+                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                onDismiss = { showColorPicker = false }
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -246,6 +270,8 @@ fun NoteEditorScreen(
                         setBackgroundColor(android.graphics.Color.TRANSPARENT)
                         setTextColor(android.graphics.Color.parseColor("#E9EEF2"))
                         hint = "Start writing your note..."
+                        setHintTextColor(android.graphics.Color.parseColor("#99E9EEF2"))
+                        gravity = android.view.Gravity.TOP or android.view.Gravity.START
                         textSize = 18f
                         bodyEditText = this
                         addTextChangedListener(object : TextWatcher {
@@ -351,6 +377,41 @@ private fun FormatButton(
             )
         )
     }
+}
+
+
+@Composable
+private fun ColorPickerDialog(
+    selectedColor: Long?,
+    onColorSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val palette = listOf(
+        0xFFFFF9C4L, 0xFFFFE0B2L, 0xFFFFCDD2L, 0xFFE1BEE7L,
+        0xFFD1C4E9L, 0xFFBBDEFBL, 0xFFB2EBF2L, 0xFFC8E6C9L,
+        0xFFDCEDC8L, 0xFFF0F4C3L, 0xFFD7CCC8L, 0xFFCFD8DCL
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select note color") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(onClick = { onColorSelected(null) }) { Text("Default") }
+                LazyVerticalGrid(columns = GridCells.Fixed(4), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(120.dp)) {
+                    items(palette) { colorLong ->
+                        Box(
+                            modifier = Modifier
+                                .size(if (selectedColor == colorLong) 30.dp else 26.dp)
+                                .background(Color(colorLong), CircleShape)
+                                .clickable { onColorSelected(colorLong) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
 }
 
 private fun persistImageToAppStorage(context: android.content.Context, sourceUri: Uri): String {

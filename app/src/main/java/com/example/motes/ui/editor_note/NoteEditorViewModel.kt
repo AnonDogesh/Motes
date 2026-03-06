@@ -27,7 +27,8 @@ data class NoteEditorUiState(
     val createdAt: Long = System.currentTimeMillis(),
     val isBoldEnabled: Boolean = false,
     val isItalicEnabled: Boolean = false,
-    val isUnderlineEnabled: Boolean = false
+    val isUnderlineEnabled: Boolean = false,
+    val cardColor: Long? = null
 )
 
 class NoteEditorViewModel(
@@ -81,6 +82,11 @@ class NoteEditorViewModel(
         _uiState.update { it.copy(isUnderlineEnabled = !it.isUnderlineEnabled) }
     }
 
+    fun setCardColor(color: Long?) {
+        _uiState.update { it.copy(cardColor = color) }
+        scheduleSave()
+    }
+
     private fun observeNote(noteId: Long) {
         viewModelScope.launch {
             noteRepository.observeById(noteId).collectLatest { note ->
@@ -93,7 +99,8 @@ class NoteEditorViewModel(
                             body = plainBody,
                             imageUris = images,
                             createdAt = note.createdAt,
-                            lastEditedLabel = "Last edited just now"
+                            lastEditedLabel = "Last edited just now",
+                            cardColor = note.cardColor
                         )
                     }
                 }
@@ -124,7 +131,8 @@ class NoteEditorViewModel(
                     createdAt = state.createdAt,
                     updatedAt = now,
                     isPinned = false,
-                    isArchived = false
+                    isArchived = false,
+                    cardColor = state.cardColor
                 )
             )
             _uiState.update {
@@ -141,7 +149,8 @@ class NoteEditorViewModel(
                 createdAt = state.createdAt,
                 updatedAt = now,
                 isPinned = false,
-                isArchived = false
+                isArchived = false,
+                cardColor = state.cardColor
             )
         )
         _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }

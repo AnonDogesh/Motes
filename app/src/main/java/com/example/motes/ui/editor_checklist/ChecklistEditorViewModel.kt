@@ -31,7 +31,8 @@ data class ChecklistEditorUiState(
     val checkedCount: Int = 0,
     val progress: Float = 0f,
     val completionLabel: String = "0 / 0 completed",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val cardColor: Long? = null
 )
 
 class ChecklistEditorViewModel(
@@ -75,6 +76,10 @@ class ChecklistEditorViewModel(
         _uiState.update { state -> calculateDerived(state.copy(items = state.items.filterNot { it.id == itemId })) }
     }
 
+    fun setCardColor(color: Long?) {
+        _uiState.update { it.copy(cardColor = color) }
+    }
+
     private fun observeChecklist() {
         val id = editorId
         viewModelScope.launch {
@@ -85,7 +90,8 @@ class ChecklistEditorViewModel(
                             it.copy(
                                 title = checklist.title,
                                 items = checklist.items.map { item -> ChecklistEditorItemUi(text = item.text, isChecked = item.isChecked) },
-                                createdAt = checklist.createdAt
+                                createdAt = checklist.createdAt,
+                                cardColor = checklist.cardColor
                             )
                         )
                     }
@@ -110,7 +116,8 @@ class ChecklistEditorViewModel(
                             createdAt = state.createdAt,
                             updatedAt = System.currentTimeMillis(),
                             isPinned = false,
-                            isArchived = false
+                            isArchived = false,
+                            cardColor = state.cardColor
                         )
                     )
                     _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }
