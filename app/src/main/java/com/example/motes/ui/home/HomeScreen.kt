@@ -43,11 +43,15 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -98,6 +102,7 @@ fun HomeScreen(
     val selectedKeys = selectionMode?.selectedKeys.orEmpty()
     val inSelectionMode = selectionMode != null
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showSettingsMenu by remember { mutableStateOf(false) }
 
     BackHandler(enabled = inSelectionMode) {
         viewModel.clearSelection()
@@ -115,6 +120,29 @@ fun HomeScreen(
                 actions = {
                     if (inSelectionMode) {
                         TextButton(onClick = viewModel::clearSelection) { Text("Cancel") }
+                    } else {
+                        Box {
+                            IconButton(onClick = { showSettingsMenu = true }) {
+                                Icon(Icons.Default.Settings, contentDescription = "Settings")
+                            }
+                            DropdownMenu(
+                                expanded = showSettingsMenu,
+                                onDismissRequest = { showSettingsMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Appearance") },
+                                    onClick = { showSettingsMenu = false }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Backup & sync") },
+                                    onClick = { showSettingsMenu = false }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("About") },
+                                    onClick = { showSettingsMenu = false }
+                                )
+                            }
+                        }
                     }
                 }
             )
@@ -290,9 +318,9 @@ private fun HomeCard(
             containerColor = when {
                 isSelected -> MaterialTheme.colorScheme.surfaceVariant
                 item.cardColor != null -> Color(item.cardColor)
-                else -> MaterialTheme.colorScheme.surface
+                else -> Color(0xFF4A4A4A)
             },
-            contentColor = MaterialTheme.colorScheme.onSurface
+            contentColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = animatedElevation.value),
         border = androidx.compose.foundation.BorderStroke(
@@ -326,12 +354,12 @@ private fun HomeCard(
                     Text(
                         text = item.title,
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.White
                     )
                     Text(
                         text = item.subtitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFFEAEAEA)
                     )
                     Text(
                         text = when (item.type) {
@@ -340,26 +368,26 @@ private fun HomeCard(
                             HomeNoteType.DRAWING -> "Drawing"
                         },
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color.White
                     )
                     if (item.type == HomeNoteType.CHECKLIST) {
                         LinearProgressIndicator(
                             progress = { item.checklistProgress ?: 0f },
                             modifier = Modifier.fillMaxWidth(),
                             color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            trackColor = Color(0xFF6D6D6D)
                         )
                         Text(
                             text = item.checklistCompletionLabel ?: "0 checked • 0 left",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = Color(0xFFEAEAEA)
                         )
                     }
                     if (item.isPinned) {
                         Text(
                             text = "Pinned",
                             style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary
+                            color = Color.White
                         )
                     }
                 }
