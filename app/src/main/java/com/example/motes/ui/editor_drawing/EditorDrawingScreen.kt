@@ -201,7 +201,7 @@ private fun ColorPickerDialogDrawing(
     onColorSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val palette = listOf(0xFFFFF9C4L,0xFFFFE0B2L,0xFFFFCDD2L,0xFFE1BEE7L,0xFFD1C4E9L,0xFFBBDEFBL,0xFFB2EBF2L,0xFFC8E6C9L,0xFFDCEDC8L,0xFFF0F4C3L,0xFFD7CCC8L,0xFFCFD8DCL)
+    val palette = listOf(0xFF6B5E2EL, 0xFF7A4A2BL, 0xFF6A3B3BL, 0xFF5A3F6EL,0xFF3F4F74L, 0xFF2F5D78L, 0xFF2F6F6DL, 0xFF3E6B3EL,0xFF5E6A2EL, 0xFF6B6B2EL, 0xFF5C4A3BL, 0xFF4E5B63L)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select drawing color") },

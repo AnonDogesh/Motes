@@ -318,7 +318,7 @@ private fun HomeCard(
             containerColor = when {
                 isSelected -> MaterialTheme.colorScheme.surfaceVariant
                 item.cardColor != null -> Color(item.cardColor)
-                else -> Color(0xFF4A4A4A)
+                else -> Color(0xFF455A64)
             },
             contentColor = Color.White
         ),
