@@ -1,6 +1,7 @@
 package com.example.motes.ui.editor_note
 
 import android.graphics.Typeface
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.text.Editable
 import android.text.Spanned
@@ -14,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,7 +38,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
@@ -106,10 +107,11 @@ fun NoteEditorScreen(
     var lastChangeBefore by remember { mutableIntStateOf(0) }
     var lastChangeCount by remember { mutableIntStateOf(0) }
     var showColorPicker by remember { mutableStateOf(false) }
-    var showFontMenu by remember { mutableStateOf(false) }
 
-    LaunchedEffect(uiState.noteId) {
-        bodyText = uiState.body
+    LaunchedEffect(uiState.body) {
+        if (bodyText != uiState.body) {
+            bodyText = uiState.body
+        }
     }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -163,22 +165,6 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
-                    Box {
-                        IconButton(onClick = { showFontMenu = true }) {
-                            Icon(Icons.Default.FontDownload, contentDescription = "Select font")
-                        }
-                        DropdownMenu(expanded = showFontMenu, onDismissRequest = { showFontMenu = false }) {
-                            fontOptions.forEach { (fontKey, label) ->
-                                DropdownMenuItem(
-                                    text = { Text(label + if (uiState.selectedFontFamily == fontKey) " ✓" else "") },
-                                    onClick = {
-                                        viewModel.setFontFamily(fontKey)
-                                        showFontMenu = false
-                                    }
-                                )
-                            }
-                        }
-                    }
                     IconButton(onClick = { showColorPicker = true }) {
                         Icon(
                             imageVector = Icons.Default.Palette,
@@ -218,6 +204,10 @@ fun NoteEditorScreen(
                         viewModel.toggleUnderline()
                     }
                 },
+                currentFontLabel = fontOptions.firstOrNull { it.first == uiState.selectedFontFamily }?.second ?: "Sans",
+                fontOptions = fontOptions,
+                selectedFontFamily = uiState.selectedFontFamily,
+                onSelectFont = viewModel::setFontFamily,
                 onAddImage = { imagePicker.launch("image/*") }
             )
         }
@@ -275,7 +265,7 @@ fun NoteEditorScreen(
                             AndroidView(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(180.dp),
+                                    .aspectRatio(resolveImageAspectRatio(context, imageUri)),
                                 factory = { ctx ->
                                     ImageView(ctx).apply {
                                         scaleType = ImageView.ScaleType.CENTER_CROP
@@ -366,8 +356,14 @@ private fun NoteFormattingToolbar(
     onToggleBold: () -> Unit,
     onToggleItalic: () -> Unit,
     onToggleUnderline: () -> Unit,
+    currentFontLabel: String,
+    fontOptions: List<Pair<String, String>>,
+    selectedFontFamily: String,
+    onSelectFont: (String) -> Unit,
     onAddImage: () -> Unit
 ) {
+    var showFontMenu by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -380,6 +376,22 @@ private fun NoteFormattingToolbar(
         FormatButton(label = "B", isSelected = isBoldEnabled, onClick = onToggleBold)
         FormatButton(label = "I", isSelected = isItalicEnabled, onClick = onToggleItalic)
         FormatButton(label = "U", isSelected = isUnderlineEnabled, onClick = onToggleUnderline)
+        Box {
+            TextButton(onClick = { showFontMenu = true }) {
+                Text(currentFontLabel)
+            }
+            DropdownMenu(expanded = showFontMenu, onDismissRequest = { showFontMenu = false }) {
+                fontOptions.forEach { (fontKey, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label + if (selectedFontFamily == fontKey) " ✓" else "") },
+                        onClick = {
+                            onSelectFont(fontKey)
+                            showFontMenu = false
+                        }
+                    )
+                }
+            }
+        }
         Spacer(modifier = Modifier.weight(1f))
         FloatingActionButton(
             onClick = onAddImage,
@@ -391,6 +403,23 @@ private fun NoteFormattingToolbar(
             Text("+")
         }
     }
+}
+
+private fun resolveImageAspectRatio(context: android.content.Context, imageUri: String): Float {
+    return runCatching {
+        val uri = Uri.parse(imageUri)
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeStream(input, null, options)
+            val width = options.outWidth
+            val height = options.outHeight
+            if (width > 0 && height > 0) {
+                (width.toFloat() / height.toFloat()).coerceIn(0.6f, 2.2f)
+            } else {
+                16f / 9f
+            }
+        } ?: 16f / 9f
+    }.getOrDefault(16f / 9f)
 }
 
 @Composable
