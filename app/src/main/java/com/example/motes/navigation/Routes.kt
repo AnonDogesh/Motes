@@ -7,6 +7,7 @@ import androidx.navigation.navArgument
 sealed class AppRoute(val route: String) {
     data object Home : AppRoute("home")
     data object Archive : AppRoute("archive")
+    data object Settings : AppRoute("settings")
 
     data class NoteEditor(val noteId: Long) : AppRoute("editor_note/$noteId") {
         companion object Spec {

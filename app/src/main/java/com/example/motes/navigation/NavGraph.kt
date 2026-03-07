@@ -12,6 +12,7 @@ import com.example.motes.ui.editor_checklist.ChecklistEditorScreen
 import com.example.motes.ui.editor_drawing.DrawingEditorScreen
 import com.example.motes.ui.editor_note.NoteEditorScreen
 import com.example.motes.ui.home.HomeScreen
+import com.example.motes.ui.settings.SettingsScreen
 import com.example.motes.ui.theme.MotesTheme
 
 @Composable
@@ -30,6 +31,10 @@ fun MotesApp() {
 
                 composable(AppRoute.Archive.route) {
                     ArchiveScreen(navController = navController)
+                }
+
+                composable(AppRoute.Settings.route) {
+                    SettingsScreen(navController = navController)
                 }
 
                 composable(

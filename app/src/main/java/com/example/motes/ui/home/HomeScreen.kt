@@ -47,8 +47,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -102,7 +100,6 @@ fun HomeScreen(
     val selectedKeys = selectionMode?.selectedKeys.orEmpty()
     val inSelectionMode = selectionMode != null
     var showDeleteConfirmation by remember { mutableStateOf(false) }
-    var showSettingsMenu by remember { mutableStateOf(false) }
 
     BackHandler(enabled = inSelectionMode) {
         viewModel.clearSelection()
@@ -121,27 +118,8 @@ fun HomeScreen(
                     if (inSelectionMode) {
                         TextButton(onClick = viewModel::clearSelection) { Text("Cancel") }
                     } else {
-                        Box {
-                            IconButton(onClick = { showSettingsMenu = true }) {
-                                Icon(Icons.Default.Settings, contentDescription = "Settings")
-                            }
-                            DropdownMenu(
-                                expanded = showSettingsMenu,
-                                onDismissRequest = { showSettingsMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Appearance") },
-                                    onClick = { showSettingsMenu = false }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Backup & sync") },
-                                    onClick = { showSettingsMenu = false }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("About") },
-                                    onClick = { showSettingsMenu = false }
-                                )
-                            }
+                        IconButton(onClick = { navController.navigate(AppRoute.Settings.route) }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
                     }
                 }
