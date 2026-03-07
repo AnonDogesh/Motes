@@ -33,16 +33,21 @@ enum class HomeFilter {
 }
 
 data class HomeListItem(
+    val selectionKey: String,
     val id: String,
     val title: String,
     val subtitle: String,
+    val previewImageUri: String? = null,
+    val cardColor: Long? = null,
     val isPinned: Boolean,
-    val type: HomeNoteType
+    val type: HomeNoteType,
+    val checklistProgress: Float? = null,
+    val checklistCompletionLabel: String? = null
 )
 
 sealed class UiMode {
     data object Normal : UiMode()
-    data class Selection(val selectedIds: Set<String>) : UiMode()
+    data class Selection(val selectedKeys: Set<String>) : UiMode()
 }
 
 class HomeViewModel(
@@ -58,6 +63,20 @@ class HomeViewModel(
             initialValue = emptyList()
         )
 
+    private val checklists: StateFlow<List<ChecklistEntity>> =
+        checklistRepository.observeActive().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    private val drawings: StateFlow<List<DrawingEntity>> =
+        drawingRepository.observeActive().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
     private val _uiMode = MutableStateFlow<UiMode>(UiMode.Normal)
     val uiMode: StateFlow<UiMode> = _uiMode.asStateFlow()
 
@@ -65,34 +84,46 @@ class HomeViewModel(
     val filter: StateFlow<HomeFilter> = _filter.asStateFlow()
 
     val items: StateFlow<List<HomeListItem>> = combine(
-        noteRepository.observeActive().map { list ->
+        notes.map { list ->
             list.map { note ->
                 HomeListItem(
-                    id = note.id,
+                    selectionKey = "note:${note.id}",
+                    id = note.id.toString(),
                     title = note.title.ifBlank { "Untitled note" },
-                    subtitle = note.content.ifBlank { "(empty note)" },
+                    subtitle = notePreview(note.content),
+                    previewImageUri = firstImageUri(note.content),
+                    cardColor = note.cardColor,
                     isPinned = note.isPinned,
                     type = HomeNoteType.NOTE
                 )
             }
         },
-        checklistRepository.observeActive().map { list ->
+        checklists.map { list ->
             list.map { checklist ->
+                val checkedCount = checklist.items.count { it.isChecked }
+                val totalCount = checklist.items.size
+                val progress = if (totalCount == 0) 0f else checkedCount.toFloat() / totalCount.toFloat()
                 HomeListItem(
+                    selectionKey = "checklist:${checklist.id}",
                     id = checklist.id,
                     title = checklist.title.ifBlank { "Untitled checklist" },
-                    subtitle = summarizeChecklist(checklist),
+                    subtitle = checklist.items.joinToString(" ") { it.text }.take(100).ifBlank { "(empty checklist)" },
+                    cardColor = checklist.cardColor,
                     isPinned = checklist.isPinned,
-                    type = HomeNoteType.CHECKLIST
+                    type = HomeNoteType.CHECKLIST,
+                    checklistProgress = progress,
+                    checklistCompletionLabel = "$checkedCount checked • ${totalCount - checkedCount} left"
                 )
             }
         },
-        drawingRepository.observeActive().map { list ->
+        drawings.map { list ->
             list.map { drawing ->
                 HomeListItem(
+                    selectionKey = "drawing:${drawing.id}",
                     id = drawing.id,
                     title = drawing.title.ifBlank { "Untitled drawing" },
                     subtitle = "${drawing.strokePaths.size} stroke(s)",
+                    cardColor = drawing.cardColor,
                     isPinned = drawing.isPinned,
                     type = HomeNoteType.DRAWING
                 )
@@ -114,24 +145,19 @@ class HomeViewModel(
         initialValue = emptyList()
     )
 
-    fun cycleFilter() {
-        _filter.update {
-            when (it) {
-                HomeFilter.ALL -> HomeFilter.NOTE
-                HomeFilter.NOTE -> HomeFilter.CHECKLIST
-                HomeFilter.CHECKLIST -> HomeFilter.DRAWING
-                HomeFilter.DRAWING -> HomeFilter.ALL
-            }
+    fun setFilter(filter: HomeFilter) {
+        _filter.update { current ->
+            if (current == filter) HomeFilter.ALL else filter
         }
     }
 
-    fun onNoteClick(id: String) {
+    fun onNoteClick(selectionKey: String) {
         _uiMode.update { mode ->
             when (mode) {
                 UiMode.Normal -> mode
                 is UiMode.Selection -> {
-                    val updated = mode.selectedIds.toMutableSet().apply {
-                        if (!add(id)) remove(id)
+                    val updated = mode.selectedKeys.toMutableSet().apply {
+                        if (!add(selectionKey)) remove(selectionKey)
                     }
                     if (updated.isEmpty()) UiMode.Normal else UiMode.Selection(updated)
                 }
@@ -139,13 +165,13 @@ class HomeViewModel(
         }
     }
 
-    fun onNoteLongPress(id: String) {
+    fun onNoteLongPress(selectionKey: String) {
         _uiMode.update { mode ->
             when (mode) {
-                UiMode.Normal -> UiMode.Selection(setOf(id))
+                UiMode.Normal -> UiMode.Selection(setOf(selectionKey))
                 is UiMode.Selection -> {
-                    val updated = mode.selectedIds.toMutableSet().apply {
-                        if (!add(id)) remove(id)
+                    val updated = mode.selectedKeys.toMutableSet().apply {
+                        if (!add(selectionKey)) remove(selectionKey)
                     }
                     if (updated.isEmpty()) UiMode.Normal else UiMode.Selection(updated)
                 }
@@ -157,25 +183,74 @@ class HomeViewModel(
         _uiMode.value = UiMode.Normal
     }
 
-    fun onArchiveSelected() {}
-    fun onDeleteSelected() {}
-    fun onPinSelected() {}
-    fun onShareSelected() {}
+    fun archiveSelected() {
+        val selected = selectedItems()
+        if (selected.isEmpty()) return
 
-    fun createNewNote(onCreated: (String) -> Unit) {
         viewModelScope.launch {
             val now = System.currentTimeMillis()
-            val note = NoteEntity(
-                title = "",
-                content = "",
-                createdAt = now,
-                updatedAt = now,
-                isPinned = false,
-                isArchived = false
-            )
-            noteRepository.upsert(note)
-            onCreated(note.id)
+            selected.forEach { item ->
+                when (item.type) {
+                    HomeNoteType.NOTE -> {
+                        val noteId = item.id.toLongOrNull() ?: return@forEach
+                        notes.value.firstOrNull { it.id == noteId }?.let { note ->
+                            noteRepository.update(note.copy(isArchived = true, updatedAt = now))
+                        }
+                    }
+                    HomeNoteType.CHECKLIST -> {
+                        checklists.value.firstOrNull { it.id == item.id }?.let { checklist ->
+                            checklistRepository.upsert(checklist.copy(isArchived = true, updatedAt = now))
+                        }
+                    }
+                    HomeNoteType.DRAWING -> {
+                        drawings.value.firstOrNull { it.id == item.id }?.let { drawing ->
+                            drawingRepository.upsert(drawing.copy(isArchived = true, updatedAt = now))
+                        }
+                    }
+                }
+            }
+            clearSelection()
         }
+    }
+
+    fun deleteSelected() {
+        val selected = selectedItems()
+        if (selected.isEmpty()) return
+
+        viewModelScope.launch {
+            selected.forEach { item ->
+                when (item.type) {
+                    HomeNoteType.NOTE -> item.id.toLongOrNull()?.let { noteRepository.deletePermanently(it) }
+                    HomeNoteType.CHECKLIST -> checklistRepository.deletePermanently(item.id)
+                    HomeNoteType.DRAWING -> drawingRepository.deletePermanently(item.id)
+                }
+            }
+            clearSelection()
+        }
+    }
+
+    fun buildShareTextForSelection(): String {
+        val selected = selectedItems()
+        if (selected.isEmpty()) return ""
+
+        return selected.joinToString(separator = "\n\n") { item ->
+            val type = when (item.type) {
+                HomeNoteType.NOTE -> "Note"
+                HomeNoteType.CHECKLIST -> "Checklist"
+                HomeNoteType.DRAWING -> "Drawing"
+            }
+            "[$type] ${item.title}\n${item.subtitle}"
+        }
+    }
+
+    private fun selectedItems(): List<HomeListItem> {
+        val selectedKeys = (uiMode.value as? UiMode.Selection)?.selectedKeys.orEmpty()
+        if (selectedKeys.isEmpty()) return emptyList()
+        return items.value.filter { it.selectionKey in selectedKeys }
+    }
+
+    fun createNewNote(onCreated: (Long) -> Unit) {
+        onCreated(-1L)
     }
 
     fun createNewChecklist(onCreated: (String) -> Unit) {
@@ -187,7 +262,8 @@ class HomeViewModel(
                 createdAt = now,
                 updatedAt = now,
                 isPinned = false,
-                isArchived = false
+                isArchived = false,
+                cardColor = null
             )
             checklistRepository.upsert(checklist)
             onCreated(checklist.id)
@@ -203,16 +279,35 @@ class HomeViewModel(
                 createdAt = now,
                 updatedAt = now,
                 isPinned = false,
-                isArchived = false
+                isArchived = false,
+                cardColor = null
             )
             drawingRepository.upsert(drawing)
             onCreated(drawing.id)
         }
     }
 
-    private fun summarizeChecklist(checklist: ChecklistEntity): String {
-        val done = checklist.items.count { it.isChecked }
-        return if (checklist.items.isEmpty()) "No checklist items" else "$done/${checklist.items.size} done"
+    private fun firstImageUri(content: String): String? {
+        return content
+            .lineSequence()
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("[[image:") && it.endsWith("]]") }
+            ?.removePrefix("[[image:")
+            ?.removeSuffix("]]")
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    private fun notePreview(content: String): String {
+        return content
+            .lineSequence()
+            .filterNot { line ->
+                val trimmed = line.trim()
+                trimmed.startsWith("[[image:") && trimmed.endsWith("]]")
+            }
+            .joinToString("\n")
+            .trim()
+            .take(100)
+            .ifBlank { "(empty note)" }
     }
 }
 

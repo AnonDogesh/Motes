@@ -11,4 +11,6 @@ interface ChecklistRepository {
 
     suspend fun upsert(checklist: ChecklistEntity)
     suspend fun delete(checklist: ChecklistEntity)
+    suspend fun restore(id: String)
+    suspend fun deletePermanently(id: String)
 }

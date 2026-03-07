@@ -1,12 +1,10 @@
 package com.example.motes.ui.editor_checklist
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.motes.data.entity.ChecklistEntity
 import com.example.motes.data.entity.ChecklistItem
 import com.example.motes.data.repository.ChecklistRepository
-import com.example.motes.navigation.AppRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,21 +24,21 @@ data class ChecklistEditorItemUi(
 )
 
 data class ChecklistEditorUiState(
-    val checklistId: String?,
+    val checklistId: String,
     val title: String = "",
     val lastEditedLabel: String = "Not saved yet",
     val items: List<ChecklistEditorItemUi> = emptyList(),
     val checkedCount: Int = 0,
     val progress: Float = 0f,
     val completionLabel: String = "0 / 0 completed",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val cardColor: Long? = null
 )
 
 class ChecklistEditorViewModel(
     private val checklistRepository: ChecklistRepository,
-    savedStateHandle: SavedStateHandle
+    private val editorId: String
 ) : ViewModel() {
-    private val editorId = AppRoute.ChecklistEditor.from(savedStateHandle)?.noteId
 
     private val _uiState = MutableStateFlow(
         calculateDerived(ChecklistEditorUiState(checklistId = editorId))
@@ -78,8 +76,12 @@ class ChecklistEditorViewModel(
         _uiState.update { state -> calculateDerived(state.copy(items = state.items.filterNot { it.id == itemId })) }
     }
 
+    fun setCardColor(color: Long?) {
+        _uiState.update { it.copy(cardColor = color) }
+    }
+
     private fun observeChecklist() {
-        val id = editorId ?: return
+        val id = editorId
         viewModelScope.launch {
             checklistRepository.observeById(id).collectLatest { checklist ->
                 if (checklist != null) {
@@ -88,7 +90,8 @@ class ChecklistEditorViewModel(
                             it.copy(
                                 title = checklist.title,
                                 items = checklist.items.map { item -> ChecklistEditorItemUi(text = item.text, isChecked = item.isChecked) },
-                                createdAt = checklist.createdAt
+                                createdAt = checklist.createdAt,
+                                cardColor = checklist.cardColor
                             )
                         )
                     }
@@ -100,11 +103,11 @@ class ChecklistEditorViewModel(
     private fun observeAutoSave() {
         viewModelScope.launch {
             uiState
-                .filter { !it.checklistId.isNullOrBlank() }
+                .filter { it.checklistId.isNotBlank() }
                 .debounce(AUTO_SAVE_DEBOUNCE_MS)
                 .collectLatest { state ->
                     if (state.title.isBlank() && state.items.all { it.text.isBlank() }) return@collectLatest
-                    val id = state.checklistId ?: return@collectLatest
+                    val id = state.checklistId
                     checklistRepository.upsert(
                         ChecklistEntity(
                             id = id,
@@ -113,7 +116,8 @@ class ChecklistEditorViewModel(
                             createdAt = state.createdAt,
                             updatedAt = System.currentTimeMillis(),
                             isPinned = false,
-                            isArchived = false
+                            isArchived = false,
+                            cardColor = state.cardColor
                         )
                     )
                     _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }

@@ -11,4 +11,6 @@ interface DrawingRepository {
 
     suspend fun upsert(drawing: DrawingEntity)
     suspend fun delete(drawing: DrawingEntity)
+    suspend fun restore(id: String)
+    suspend fun deletePermanently(id: String)
 }

@@ -12,6 +12,7 @@ import com.example.motes.ui.editor_checklist.ChecklistEditorScreen
 import com.example.motes.ui.editor_drawing.DrawingEditorScreen
 import com.example.motes.ui.editor_note.NoteEditorScreen
 import com.example.motes.ui.home.HomeScreen
+import com.example.motes.ui.settings.SettingsScreen
 import com.example.motes.ui.theme.MotesTheme
 
 @Composable
@@ -32,25 +33,38 @@ fun MotesApp() {
                     ArchiveScreen(navController = navController)
                 }
 
+                composable(AppRoute.Settings.route) {
+                    SettingsScreen(navController = navController)
+                }
+
                 composable(
                     route = AppRoute.NoteEditor.ROUTE,
                     arguments = AppRoute.NoteEditor.arguments
-                ) {
-                    NoteEditorScreen(navController = navController)
+                ) { backStackEntry ->
+                    NoteEditorScreen(
+                        navController = navController,
+                        backStackEntry = backStackEntry
+                    )
                 }
 
                 composable(
                     route = AppRoute.ChecklistEditor.ROUTE,
                     arguments = AppRoute.ChecklistEditor.arguments
-                ) {
-                    ChecklistEditorScreen(navController = navController)
+                ) { backStackEntry ->
+                    ChecklistEditorScreen(
+                        navController = navController,
+                        backStackEntry = backStackEntry
+                    )
                 }
 
                 composable(
                     route = AppRoute.DrawingEditor.ROUTE,
                     arguments = AppRoute.DrawingEditor.arguments
-                ) {
-                    DrawingEditorScreen(navController = navController)
+                ) { backStackEntry ->
+                    DrawingEditorScreen(
+                        navController = navController,
+                        backStackEntry = backStackEntry
+                    )
                 }
             }
         }

@@ -15,6 +15,12 @@ interface ChecklistDao {
     @Delete
     suspend fun delete(checklist: ChecklistEntity)
 
+    @Query("DELETE FROM checklists WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    @Query("UPDATE checklists SET isArchived = :archived, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun setArchived(id: String, archived: Boolean, updatedAt: Long)
+
     @Query("SELECT * FROM checklists WHERE id = :id LIMIT 1")
     fun observeById(id: String): Flow<ChecklistEntity?>
 

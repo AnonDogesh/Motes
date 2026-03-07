@@ -13,13 +13,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -29,7 +36,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -43,9 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.createSavedStateHandle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
@@ -55,20 +63,25 @@ import com.example.motes.ui.theme.SurfaceMedium
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawingEditorScreen(
-    navController: NavController
+    navController: NavController,
+    backStackEntry: NavBackStackEntry
 ) {
     val context = LocalContext.current
     val repository = AppContainer.drawingRepository(context)
+    val drawingId = backStackEntry.arguments?.getString("noteId").orEmpty()
     val viewModel: DrawingEditorViewModel = viewModel(
+        backStackEntry,
         factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-                return DrawingEditorViewModel(repository, extras.createSavedStateHandle()) as T
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return DrawingEditorViewModel(repository, drawingId) as T
             }
         }
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentStrokePoints = remember { mutableStateListOf<DrawPoint>() }
+    var showColorPicker by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -97,6 +110,9 @@ fun DrawingEditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showColorPicker = true }) {
+                        Icon(Icons.Default.Palette, contentDescription = "Pick drawing color", tint = uiState.cardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
+                    }
                     TextButton(onClick = viewModel::undo) { Text("Undo") }
                     TextButton(onClick = viewModel::clear) { Text("Clear") }
                 }
@@ -113,6 +129,14 @@ fun DrawingEditorScreen(
             )
         }
     ) { innerPadding ->
+        if (showColorPicker) {
+            ColorPickerDialogDrawing(
+                selectedColor = uiState.cardColor,
+                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                onDismiss = { showColorPicker = false }
+            )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -168,6 +192,31 @@ fun DrawingEditorScreen(
             }
         }
     }
+}
+
+
+@Composable
+private fun ColorPickerDialogDrawing(
+    selectedColor: Long?,
+    onColorSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val palette = listOf(0xFF6B5E2EL, 0xFF7A4A2BL, 0xFF6A3B3BL, 0xFF5A3F6EL,0xFF3F4F74L, 0xFF2F5D78L, 0xFF2F6F6DL, 0xFF3E6B3EL,0xFF5E6A2EL, 0xFF6B6B2EL, 0xFF5C4A3BL, 0xFF4E5B63L)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select drawing color") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                TextButton(onClick = { onColorSelected(null) }) { Text("Default") }
+                LazyVerticalGrid(columns = GridCells.Fixed(4), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(120.dp)) {
+                    items(palette) { colorLong ->
+                        Box(modifier = Modifier.size(if (selectedColor == colorLong) 30.dp else 26.dp).background(Color(colorLong), CircleShape).clickable { onColorSelected(colorLong) })
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
 }
 
 @Composable

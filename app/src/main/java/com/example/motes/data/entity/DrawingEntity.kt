@@ -12,5 +12,6 @@ data class DrawingEntity(
     val createdAt: Long,
     val updatedAt: Long,
     val isPinned: Boolean,
-    val isArchived: Boolean
+    val isArchived: Boolean,
+    val cardColor: Long? = null
 )

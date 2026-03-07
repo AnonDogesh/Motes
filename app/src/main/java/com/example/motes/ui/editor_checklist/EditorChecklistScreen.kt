@@ -1,6 +1,7 @@
 package com.example.motes.ui.editor_checklist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,15 +9,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -46,9 +55,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
@@ -58,20 +66,25 @@ import com.example.motes.ui.theme.SurfaceMedium
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChecklistEditorScreen(
-    navController: NavController
+    navController: NavController,
+    backStackEntry: NavBackStackEntry
 ) {
     val context = LocalContext.current
     val repository = AppContainer.checklistRepository(context)
+    val checklistId = backStackEntry.arguments?.getString("noteId").orEmpty()
     val viewModel: ChecklistEditorViewModel = viewModel(
+        backStackEntry,
         factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-                return ChecklistEditorViewModel(repository, extras.createSavedStateHandle()) as T
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return ChecklistEditorViewModel(repository, checklistId) as T
             }
         }
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val checklistKey = uiState.checklistId ?: "new"
+    val checklistKey = uiState.checklistId.ifBlank { "new" }
     var newItemText by rememberSaveable(checklistKey) { mutableStateOf("") }
+    var showColorPicker by rememberSaveable(checklistKey) { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -95,6 +108,11 @@ fun ChecklistEditorScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                },
+                actions = {
+                    IconButton(onClick = { showColorPicker = true }) {
+                        Icon(Icons.Default.Palette, contentDescription = "Pick checklist color", tint = uiState.cardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
+                    }
                 }
             )
         },
@@ -109,6 +127,14 @@ fun ChecklistEditorScreen(
             )
         }
     ) { innerPadding ->
+        if (showColorPicker) {
+            ColorPickerDialogChecklist(
+                selectedColor = uiState.cardColor,
+                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                onDismiss = { showColorPicker = false }
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -243,6 +269,31 @@ private fun ChecklistRow(
             )
         }
     }
+}
+
+
+@Composable
+private fun ColorPickerDialogChecklist(
+    selectedColor: Long?,
+    onColorSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val palette = listOf(0xFF6B5E2EL, 0xFF7A4A2BL, 0xFF6A3B3BL, 0xFF5A3F6EL,0xFF3F4F74L, 0xFF2F5D78L, 0xFF2F6F6DL, 0xFF3E6B3EL,0xFF5E6A2EL, 0xFF6B6B2EL, 0xFF5C4A3BL, 0xFF4E5B63L)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select checklist color") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                TextButton(onClick = { onColorSelected(null) }) { Text("Default") }
+                LazyVerticalGrid(columns = GridCells.Fixed(4), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(120.dp)) {
+                    gridItems(palette) { colorLong ->
+                        Box(modifier = Modifier.size(if (selectedColor == colorLong) 30.dp else 26.dp).background(Color(colorLong), RoundedCornerShape(100)).clickable { onColorSelected(colorLong) })
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
 }
 
 @Composable

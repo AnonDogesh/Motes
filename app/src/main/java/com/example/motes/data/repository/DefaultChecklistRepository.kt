@@ -22,4 +22,12 @@ class DefaultChecklistRepository(
     override suspend fun delete(checklist: ChecklistEntity) {
         checklistDao.delete(checklist)
     }
+
+    override suspend fun restore(id: String) {
+        checklistDao.setArchived(id = id, archived = false, updatedAt = System.currentTimeMillis())
+    }
+
+    override suspend fun deletePermanently(id: String) {
+        checklistDao.deleteById(id)
+    }
 }
