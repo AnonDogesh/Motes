@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 private const val AUTO_SAVE_DEBOUNCE_MS = 500L
 private const val IMAGE_LINE_PREFIX = "[[image:"
 private const val IMAGE_LINE_SUFFIX = "]]"
+private const val FONT_LINE_PREFIX = "[[font:"
+private const val FONT_LINE_SUFFIX = "]]"
 
 data class NoteEditorUiState(
     val noteId: Long = -1L,
@@ -28,7 +30,8 @@ data class NoteEditorUiState(
     val isBoldEnabled: Boolean = false,
     val isItalicEnabled: Boolean = false,
     val isUnderlineEnabled: Boolean = false,
-    val cardColor: Long? = null
+    val cardColor: Long? = null,
+    val selectedFontFamily: String = "sans-serif"
 )
 
 class NoteEditorViewModel(
@@ -87,11 +90,17 @@ class NoteEditorViewModel(
         scheduleSave()
     }
 
+    fun setFontFamily(fontFamily: String) {
+        if (fontFamily.isBlank()) return
+        _uiState.update { it.copy(selectedFontFamily = fontFamily) }
+        scheduleSave()
+    }
+
     private fun observeNote(noteId: Long) {
         viewModelScope.launch {
             noteRepository.observeById(noteId).collectLatest { note ->
                 if (note != null) {
-                    val (plainBody, images) = decodeNoteContent(note.content)
+                    val (plainBody, images, fontFamily) = decodeNoteContent(note.content)
                     _uiState.update {
                         it.copy(
                             noteId = note.id,
@@ -100,7 +109,8 @@ class NoteEditorViewModel(
                             imageUris = images,
                             createdAt = note.createdAt,
                             lastEditedLabel = "Last edited just now",
-                            cardColor = note.cardColor
+                            cardColor = note.cardColor,
+                            selectedFontFamily = fontFamily
                         )
                     }
                 }
@@ -121,7 +131,7 @@ class NoteEditorViewModel(
         if (state.title.isBlank() && state.body.isBlank() && state.imageUris.isEmpty()) return
 
         val now = System.currentTimeMillis()
-        val encodedContent = encodeNoteContent(state.body, state.imageUris)
+        val encodedContent = encodeNoteContent(state.body, state.imageUris, state.selectedFontFamily)
 
         if (state.noteId == -1L) {
             val insertedId = noteRepository.insert(
@@ -156,31 +166,33 @@ class NoteEditorViewModel(
         _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }
     }
 
-    private fun encodeNoteContent(body: String, imageUris: List<String>): String {
+    private fun encodeNoteContent(body: String, imageUris: List<String>, fontFamily: String): String {
         val imageLines = imageUris.joinToString(separator = "\n") { uri -> "$IMAGE_LINE_PREFIX$uri$IMAGE_LINE_SUFFIX" }
-        return when {
-            body.isBlank() && imageLines.isBlank() -> ""
-            body.isBlank() -> imageLines
-            imageLines.isBlank() -> body
-            else -> "$body\n$imageLines"
-        }
+        val fontLine = if (fontFamily.isBlank() || fontFamily == "sans-serif") "" else "$FONT_LINE_PREFIX$fontFamily$FONT_LINE_SUFFIX"
+
+        val parts = listOf(body, imageLines, fontLine).filter { it.isNotBlank() }
+        return parts.joinToString(separator = "\n")
     }
 
-    private fun decodeNoteContent(content: String): Pair<String, List<String>> {
-        if (content.isBlank()) return "" to emptyList()
+    private fun decodeNoteContent(content: String): Triple<String, List<String>, String> {
+        if (content.isBlank()) return Triple("", emptyList(), "sans-serif")
         val bodyLines = mutableListOf<String>()
         val imageUris = mutableListOf<String>()
+        var fontFamily = "sans-serif"
 
         content.lines().forEach { line ->
             val trimmed = line.trim()
             if (trimmed.startsWith(IMAGE_LINE_PREFIX) && trimmed.endsWith(IMAGE_LINE_SUFFIX)) {
                 val uri = trimmed.removePrefix(IMAGE_LINE_PREFIX).removeSuffix(IMAGE_LINE_SUFFIX)
                 if (uri.isNotBlank()) imageUris.add(uri)
+            } else if (trimmed.startsWith(FONT_LINE_PREFIX) && trimmed.endsWith(FONT_LINE_SUFFIX)) {
+                val parsedFont = trimmed.removePrefix(FONT_LINE_PREFIX).removeSuffix(FONT_LINE_SUFFIX)
+                if (parsedFont.isNotBlank()) fontFamily = parsedFont
             } else {
                 bodyLines.add(line)
             }
         }
 
-        return bodyLines.joinToString("\n") to imageUris
+        return Triple(bodyLines.joinToString("\n"), imageUris, fontFamily)
     }
 }

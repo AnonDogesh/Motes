@@ -36,10 +36,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -103,6 +106,7 @@ fun NoteEditorScreen(
     var lastChangeBefore by remember { mutableIntStateOf(0) }
     var lastChangeCount by remember { mutableIntStateOf(0) }
     var showColorPicker by remember { mutableStateOf(false) }
+    var showFontMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.noteId) {
         bodyText = uiState.body
@@ -119,6 +123,21 @@ fun NoteEditorScreen(
     val currentItalicEnabled = rememberUpdatedState(uiState.isItalicEnabled)
     val currentUnderlineEnabled = rememberUpdatedState(uiState.isUnderlineEnabled)
     val currentOnBodyChanged = rememberUpdatedState(viewModel::onBodyChanged)
+    val currentFontFamily = rememberUpdatedState(uiState.selectedFontFamily)
+    val fontOptions = remember {
+        listOf(
+            "sans-serif" to "Sans",
+            "serif" to "Serif",
+            "monospace" to "Mono",
+            "sans-serif-light" to "Light",
+            "sans-serif-condensed" to "Condensed",
+            "sans-serif-smallcaps" to "Small Caps",
+            "casual" to "Casual",
+            "cursive" to "Cursive",
+            "sans-serif-black" to "Black",
+            "sans-serif-medium" to "Medium"
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -144,6 +163,22 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
+                    Box {
+                        IconButton(onClick = { showFontMenu = true }) {
+                            Icon(Icons.Default.FontDownload, contentDescription = "Select font")
+                        }
+                        DropdownMenu(expanded = showFontMenu, onDismissRequest = { showFontMenu = false }) {
+                            fontOptions.forEach { (fontKey, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label + if (uiState.selectedFontFamily == fontKey) " ✓" else "") },
+                                    onClick = {
+                                        viewModel.setFontFamily(fontKey)
+                                        showFontMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                     IconButton(onClick = { showColorPicker = true }) {
                         Icon(
                             imageVector = Icons.Default.Palette,
@@ -274,6 +309,7 @@ fun NoteEditorScreen(
                         setHintTextColor(android.graphics.Color.parseColor("#99E9EEF2"))
                         gravity = android.view.Gravity.TOP or android.view.Gravity.START
                         textSize = 18f
+                        typeface = Typeface.create(currentFontFamily.value, Typeface.NORMAL)
                         bodyEditText = this
                         addTextChangedListener(object : TextWatcher {
                             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -309,6 +345,7 @@ fun NoteEditorScreen(
                         editText.setText(bodyText)
                         editText.setSelection(bodyText.length)
                     }
+                    editText.typeface = Typeface.create(currentFontFamily.value, Typeface.NORMAL)
                     bodyEditText = editText
                 }
             )
