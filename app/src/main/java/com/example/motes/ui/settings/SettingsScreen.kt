@@ -152,7 +152,7 @@ fun SettingsScreen(navController: NavController) {
                 ) {
                     Icon(Icons.Default.Notifications, contentDescription = null, tint = MutedText)
                     Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("Push Notifications", color = Color.White, style = MaterialTheme.typography.titleMedium)
                         Text("Daily summaries and reminders", color = MutedText, style = MaterialTheme.typography.bodySmall)
                     }
