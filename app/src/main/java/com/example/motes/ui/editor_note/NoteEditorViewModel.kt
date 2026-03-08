@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val AUTO_SAVE_DEBOUNCE_MS = 500L
+private const val AUTO_SAVE_DEBOUNCE_MS = 2500L
 private const val IMAGE_LINE_PREFIX = "[[image:"
 private const val IMAGE_LINE_SUFFIX = "]]"
 private const val FONT_LINE_PREFIX = "[[font:"
@@ -113,6 +113,12 @@ class NoteEditorViewModel(
                 )
             }
         }
+    }
+
+
+    suspend fun saveNow() {
+        saveJob?.cancel()
+        saveDraft()
     }
 
     private fun scheduleSave() {

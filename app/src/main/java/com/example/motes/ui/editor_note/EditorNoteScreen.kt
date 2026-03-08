@@ -10,6 +10,7 @@ import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
 import android.widget.EditText
 import android.widget.ImageView
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -58,6 +59,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -78,6 +80,7 @@ import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.SurfaceHigh
 import com.example.motes.ui.theme.SurfaceMedium
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
@@ -101,6 +104,8 @@ fun NoteEditorScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val screenScope = rememberCoroutineScope()
+    var isExiting by remember { mutableStateOf(false) }
     var bodyText by remember { mutableStateOf(uiState.body) }
     var bodyEditText by remember { mutableStateOf<EditText?>(null) }
     var lastChangeStart by remember { mutableIntStateOf(0) }
@@ -141,6 +146,17 @@ fun NoteEditorScreen(
         )
     }
 
+    fun saveAndExit() {
+        if (isExiting) return
+        isExiting = true
+        screenScope.launch {
+            viewModel.saveNow()
+            navController.popBackStack()
+        }
+    }
+
+    BackHandler(onBack = ::saveAndExit)
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -160,7 +176,7 @@ fun NoteEditorScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = ::saveAndExit) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
