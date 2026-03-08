@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,13 +31,16 @@ import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,6 +65,9 @@ fun SettingsScreen(navController: NavController) {
     var selectedTheme by remember { mutableStateOf("Dark") }
     var compactLayout by remember { mutableStateOf(false) }
     var notificationsEnabled by remember { mutableStateOf(true) }
+    var accountName by remember { mutableStateOf("Alex Morgan") }
+    var draftAccountName by remember { mutableStateOf(accountName) }
+    var showRenameDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = ScreenBackground,
@@ -74,12 +82,30 @@ fun SettingsScreen(navController: NavController) {
             )
         }
     ) { innerPadding ->
+        if (showRenameDialog) {
+            RenameAccountDialog(
+                value = draftAccountName,
+                onValueChange = { draftAccountName = it },
+                onDismiss = {
+                    draftAccountName = accountName
+                    showRenameDialog = false
+                },
+                onSave = {
+                    val trimmedName = draftAccountName.trim()
+                    accountName = if (trimmedName.isEmpty()) accountName else trimmedName
+                    draftAccountName = accountName
+                    showRenameDialog = false
+                }
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(ScreenBackground)
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -88,7 +114,10 @@ fun SettingsScreen(navController: NavController) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { }
+                        .clickable {
+                            draftAccountName = accountName
+                            showRenameDialog = true
+                        }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -101,7 +130,7 @@ fun SettingsScreen(navController: NavController) {
                         Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF846B45))
                     }
                     Spacer(Modifier.width(12.dp))
-                    Text("Alex Morgan", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Text(accountName, style = MaterialTheme.typography.titleMedium, color = Color.White)
                     Spacer(modifier = Modifier.weight(1f))
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MutedText)
                 }
@@ -116,7 +145,11 @@ fun SettingsScreen(navController: NavController) {
                         Text("Theme", color = Color.White, style = MaterialTheme.typography.titleMedium)
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
                         ThemeOption(
                             label = "Light",
                             selected = selectedTheme == "Light",
@@ -254,18 +287,59 @@ private fun ThemeOption(
         border = if (selected) androidx.compose.foundation.BorderStroke(2.dp, Accent) else null
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(88.dp)
+                .padding(horizontal = 8.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
                     .size(26.dp)
                     .background(if (selected) Accent else Color(0xFFA9B7C6), CircleShape)
             )
-            Text(label, color = if (selected) Accent else MutedText)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = label,
+                color = if (selected) Accent else Color.White,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1
+            )
         }
     }
+}
+
+
+@Composable
+private fun RenameAccountDialog(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename account") },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                label = { Text("Account name") }
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onSave) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
