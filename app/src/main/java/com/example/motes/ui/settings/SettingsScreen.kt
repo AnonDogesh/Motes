@@ -162,7 +162,7 @@ fun SettingsScreen(navController: NavController) {
 
             SectionTitle("SYNC & DATA")
             SettingsCard {
-                Column(Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     SimpleActionRow(icon = Icons.Default.Download, title = "Export Notes", onClick = { })
                     HorizontalDivider(color = Color(0xFF344556))
                     Row(
