@@ -9,7 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -46,7 +46,7 @@ class NoteEditorViewModel(
 
     init {
         if (initialNoteId != -1L) {
-            observeNote(initialNoteId)
+            loadInitialNote(initialNoteId)
         }
     }
 
@@ -96,24 +96,21 @@ class NoteEditorViewModel(
         scheduleSave()
     }
 
-    private fun observeNote(noteId: Long) {
+    private fun loadInitialNote(noteId: Long) {
         viewModelScope.launch {
-            noteRepository.observeById(noteId).collectLatest { note ->
-                if (note != null) {
-                    val (plainBody, images, fontFamily) = decodeNoteContent(note.content)
-                    _uiState.update {
-                        it.copy(
-                            noteId = note.id,
-                            title = note.title,
-                            body = plainBody,
-                            imageUris = images,
-                            createdAt = note.createdAt,
-                            lastEditedLabel = "Last edited just now",
-                            cardColor = note.cardColor,
-                            selectedFontFamily = fontFamily
-                        )
-                    }
-                }
+            val note = noteRepository.observeById(noteId).first() ?: return@launch
+            val (plainBody, images, fontFamily) = decodeNoteContent(note.content)
+            _uiState.update {
+                it.copy(
+                    noteId = note.id,
+                    title = note.title,
+                    body = plainBody,
+                    imageUris = images,
+                    createdAt = note.createdAt,
+                    lastEditedLabel = "Last edited just now",
+                    cardColor = note.cardColor,
+                    selectedFontFamily = fontFamily
+                )
             }
         }
     }
