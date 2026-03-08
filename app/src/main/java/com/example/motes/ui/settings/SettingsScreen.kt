@@ -118,9 +118,21 @@ fun SettingsScreen(navController: NavController) {
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        ThemeOption("Light", selectedTheme == "Light") { selectedTheme = "Light" }
-                        ThemeOption("Dark", selectedTheme == "Dark") { selectedTheme = "Dark" }
-                        ThemeOption("System", selectedTheme == "System") { selectedTheme = "System" }
+                        ThemeOption(
+                            label = "Light",
+                            selected = selectedTheme == "Light",
+                            modifier = Modifier.weight(1f),
+                        ) { selectedTheme = "Light" }
+                        ThemeOption(
+                            label = "Dark",
+                            selected = selectedTheme == "Dark",
+                            modifier = Modifier.weight(1f),
+                        ) { selectedTheme = "Dark" }
+                        ThemeOption(
+                            label = "System",
+                            selected = selectedTheme == "System",
+                            modifier = Modifier.weight(1f),
+                        ) { selectedTheme = "System" }
                     }
 
                     HorizontalDivider(color = Color(0xFF344556))
@@ -227,10 +239,14 @@ private fun SimpleActionRow(
 }
 
 @Composable
-private fun ThemeOption(label: String, selected: Boolean, onSelect: () -> Unit) {
+private fun ThemeOption(
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onSelect: () -> Unit
+) {
     Card(
-        modifier = Modifier
-            .weight(1f)
+        modifier = modifier
             .clickable(onClick = onSelect),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
