@@ -103,7 +103,7 @@ fun SettingsScreen(navController: NavController) {
                     }
                     Spacer(Modifier.width(12.dp))
                     Text("Alex Morgan", style = MaterialTheme.typography.titleMedium, color = Color.White)
-                    Spacer(Modifier.weight(1f))
+                    Spacer(modifier = Modifier.weight(1f))
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MutedText)
                 }
             }
@@ -129,7 +129,7 @@ fun SettingsScreen(navController: NavController) {
                         Icon(Icons.Default.ViewModule, contentDescription = null, tint = MutedText)
                         Spacer(Modifier.width(8.dp))
                         Text("Note Layout", color = Color.White, style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.weight(1f))
+                        Spacer(modifier = Modifier.weight(1f))
                         LayoutPill(isCompact = compactLayout, onToggle = { compactLayout = !compactLayout })
                     }
                 }
@@ -172,7 +172,7 @@ fun SettingsScreen(navController: NavController) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFFF7A7A))
                         Spacer(Modifier.width(10.dp))
                         Text("Clear Cache", color = Color(0xFFFF7A7A), style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.weight(1f))
+                        Spacer(modifier = Modifier.weight(1f))
                         Text("124 MB", color = MutedText)
                     }
                 }
@@ -221,7 +221,7 @@ private fun SimpleActionRow(
         Icon(icon, contentDescription = null, tint = MutedText)
         Spacer(Modifier.width(10.dp))
         Text(title, color = Color.White, style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(1f))
         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MutedText)
     }
 }
