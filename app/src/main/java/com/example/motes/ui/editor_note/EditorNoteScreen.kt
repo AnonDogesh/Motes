@@ -54,7 +54,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -106,18 +105,11 @@ fun NoteEditorScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val screenScope = rememberCoroutineScope()
     var isExiting by remember { mutableStateOf(false) }
-    var bodyText by remember { mutableStateOf(uiState.body) }
     var bodyEditText by remember { mutableStateOf<EditText?>(null) }
     var lastChangeStart by remember { mutableIntStateOf(0) }
     var lastChangeBefore by remember { mutableIntStateOf(0) }
     var lastChangeCount by remember { mutableIntStateOf(0) }
     var showColorPicker by remember { mutableStateOf(false) }
-
-    LaunchedEffect(uiState.body) {
-        if (bodyText != uiState.body) {
-            bodyText = uiState.body
-        }
-    }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -130,6 +122,7 @@ fun NoteEditorScreen(
     val currentItalicEnabled = rememberUpdatedState(uiState.isItalicEnabled)
     val currentUnderlineEnabled = rememberUpdatedState(uiState.isUnderlineEnabled)
     val currentOnBodyChanged = rememberUpdatedState(viewModel::onBodyChanged)
+    val currentBodyValue = rememberUpdatedState(uiState.body)
     val currentFontFamily = rememberUpdatedState(uiState.selectedFontFamily)
     val fontOptions = remember {
         listOf(
@@ -316,6 +309,8 @@ fun NoteEditorScreen(
                         gravity = android.view.Gravity.TOP or android.view.Gravity.START
                         textSize = 18f
                         typeface = Typeface.create(currentFontFamily.value, Typeface.NORMAL)
+                        setText(uiState.body)
+                        setSelection(text.length)
                         bodyEditText = this
                         addTextChangedListener(object : TextWatcher {
                             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -340,16 +335,18 @@ fun NoteEditorScreen(
                                         s.setSpan(UnderlineSpan(), lastChangeStart, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                                     }
                                 }
-                                bodyText = s.toString()
-                                currentOnBodyChanged.value(bodyText)
+                                val newBody = s.toString()
+                                if (newBody != currentBodyValue.value) {
+                                    currentOnBodyChanged.value(newBody)
+                                }
                             }
                         })
                     }
                 },
                 update = { editText ->
-                    if (editText.text.toString() != bodyText) {
-                        editText.setText(bodyText)
-                        editText.setSelection(bodyText.length)
+                    if (!editText.isFocused && editText.text.toString() != uiState.body) {
+                        editText.setText(uiState.body)
+                        editText.setSelection(editText.text.length)
                     }
                     editText.typeface = Typeface.create(currentFontFamily.value, Typeface.NORMAL)
                     bodyEditText = editText
