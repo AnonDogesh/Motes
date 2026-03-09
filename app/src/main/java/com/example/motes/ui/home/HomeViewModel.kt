@@ -42,7 +42,9 @@ data class HomeListItem(
     val isPinned: Boolean,
     val type: HomeNoteType,
     val checklistProgress: Float? = null,
-    val checklistCompletionLabel: String? = null
+    val checklistCompletionLabel: String? = null,
+    val lastSavedAt: Long,
+    val previewDrawingPaths: List<String> = emptyList()
 )
 
 sealed class UiMode {
@@ -94,7 +96,8 @@ class HomeViewModel(
                     previewImageUri = firstImageUri(note.content),
                     cardColor = note.cardColor,
                     isPinned = note.isPinned,
-                    type = HomeNoteType.NOTE
+                    type = HomeNoteType.NOTE,
+                    lastSavedAt = note.updatedAt
                 )
             }
         },
@@ -112,7 +115,8 @@ class HomeViewModel(
                     isPinned = checklist.isPinned,
                     type = HomeNoteType.CHECKLIST,
                     checklistProgress = progress,
-                    checklistCompletionLabel = "$checkedCount checked • ${totalCount - checkedCount} left"
+                    checklistCompletionLabel = "$checkedCount checked • ${totalCount - checkedCount} left",
+                    lastSavedAt = checklist.updatedAt
                 )
             }
         },
@@ -125,14 +129,16 @@ class HomeViewModel(
                     subtitle = "${drawing.strokePaths.size} stroke(s)",
                     cardColor = drawing.cardColor,
                     isPinned = drawing.isPinned,
-                    type = HomeNoteType.DRAWING
+                    type = HomeNoteType.DRAWING,
+                    lastSavedAt = drawing.updatedAt,
+                    previewDrawingPaths = drawing.strokePaths
                 )
             }
         },
         filter
     ) { notesItems, checklistItems, drawingItems, activeFilter ->
         val merged = (notesItems + checklistItems + drawingItems)
-            .sortedWith(compareByDescending<HomeListItem> { it.isPinned }.thenBy { it.title.lowercase() })
+            .sortedWith(compareByDescending<HomeListItem> { it.isPinned }.thenByDescending { it.lastSavedAt })
         when (activeFilter) {
             HomeFilter.ALL -> merged
             HomeFilter.NOTE -> merged.filter { it.type == HomeNoteType.NOTE }
