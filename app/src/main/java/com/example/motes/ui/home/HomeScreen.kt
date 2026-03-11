@@ -85,6 +85,7 @@ import com.example.motes.ui.components.SpeedDialFab
 import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.DarkBlueBase
 import com.example.motes.ui.theme.MotesTheme
+import com.example.motes.ui.theme.cardColorForDisplay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -309,7 +310,7 @@ private fun HomeCard(
         colors = CardDefaults.cardColors(
             containerColor = when {
                 isSelected -> MaterialTheme.colorScheme.surfaceVariant
-                item.cardColor != null -> Color(item.cardColor)
+                item.cardColor != null -> Color(cardColorForDisplay(item.cardColor, isLightTheme))
                 else -> MaterialTheme.colorScheme.surfaceVariant
             },
             contentColor = Color.White

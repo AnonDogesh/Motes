@@ -64,7 +64,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -77,6 +79,10 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
+import com.example.motes.ui.theme.DarkCardPalette
+import com.example.motes.ui.theme.LightCardPalette
+import com.example.motes.ui.theme.cardColorForDisplay
+import com.example.motes.ui.theme.cardColorForStorage
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -101,6 +107,10 @@ fun NoteEditorScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val displayedCardColor = uiState.cardColor?.let { cardColorForDisplay(it, isLightTheme) }
+    val bodyTextColor = MaterialTheme.colorScheme.onSurface.toArgb()
+    val hintTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f).toArgb()
     val screenScope = rememberCoroutineScope()
     var isExiting by remember { mutableStateOf(false) }
     var bodyEditText by remember { mutableStateOf<EditText?>(null) }
@@ -221,8 +231,11 @@ fun NoteEditorScreen(
     ) { innerPadding ->
         if (showColorPicker) {
             ColorPickerDialog(
-                selectedColor = uiState.cardColor,
-                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                selectedColor = displayedCardColor,
+                onColorSelected = { selected ->
+                    viewModel.setCardColor(selected?.let { cardColorForStorage(it, isLightTheme) })
+                    showColorPicker = false
+                },
                 onDismiss = { showColorPicker = false }
             )
         }
@@ -301,9 +314,9 @@ fun NoteEditorScreen(
                 factory = { ctx ->
                     EditText(ctx).apply {
                         setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                        setTextColor(android.graphics.Color.parseColor("#E9EEF2"))
+                        setTextColor(bodyTextColor)
                         hint = "Start writing your note..."
-                        setHintTextColor(android.graphics.Color.parseColor("#99E9EEF2"))
+                        setHintTextColor(hintTextColor)
                         gravity = android.view.Gravity.TOP or android.view.Gravity.START
                         textSize = 18f
                         typeface = Typeface.create(currentFontFamily.value, Typeface.NORMAL)
@@ -347,6 +360,8 @@ fun NoteEditorScreen(
                         editText.setSelection(editText.text.length)
                     }
                     editText.typeface = Typeface.create(currentFontFamily.value, Typeface.NORMAL)
+                    editText.setTextColor(bodyTextColor)
+                    editText.setHintTextColor(hintTextColor)
                     bodyEditText = editText
                 }
             )
@@ -464,11 +479,8 @@ private fun ColorPickerDialog(
     onColorSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val palette = listOf(
-        0xFF6B5E2EL, 0xFF7A4A2BL, 0xFF6A3B3BL, 0xFF5A3F6EL,
-        0xFF3F4F74L, 0xFF2F5D78L, 0xFF2F6F6DL, 0xFF3E6B3EL,
-        0xFF5E6A2EL, 0xFF6B6B2EL, 0xFF5C4A3BL, 0xFF4E5B63L
-    )
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val palette = if (isLightTheme) LightCardPalette else DarkCardPalette
 
     AlertDialog(
         onDismissRequest = onDismiss,
