@@ -69,6 +69,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
@@ -82,6 +83,7 @@ import com.example.motes.navigation.AppRoute
 import com.example.motes.ui.components.FilterDialFab
 import com.example.motes.ui.components.SpeedDialFab
 import com.example.motes.ui.theme.Accent
+import com.example.motes.ui.theme.DarkBlueBase
 import com.example.motes.ui.theme.MotesTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -283,6 +285,9 @@ private fun HomeCard(
         targetValue = if (isPressed) 2.dp else if (isSelected) 10.dp else 8.dp,
         label = "home_card_elevation"
     )
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val cardTitleColor = if (isLightTheme) DarkBlueBase else Color.White
+    val cardSubColor = if (isLightTheme) DarkBlueBase.copy(alpha = 0.86f) else Color(0xFFEAEAEA)
 
     Card(
         modifier = Modifier
@@ -352,12 +357,12 @@ private fun HomeCard(
                     Text(
                         text = item.title,
                         style = MaterialTheme.typography.titleLarge,
-                        color = Color.White
+                        color = cardTitleColor
                     )
                     Text(
                         text = item.subtitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFFEAEAEA)
+                        color = cardSubColor
                     )
                     Text(
                         text = when (item.type) {
@@ -366,7 +371,7 @@ private fun HomeCard(
                             HomeNoteType.DRAWING -> "Drawing"
                         },
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.White
+                        color = cardTitleColor
                     )
                     if (item.type == HomeNoteType.CHECKLIST) {
                         LinearProgressIndicator(
@@ -378,14 +383,14 @@ private fun HomeCard(
                         Text(
                             text = item.checklistCompletionLabel ?: "0 checked • 0 left",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFEAEAEA)
+                            color = cardSubColor
                         )
                     }
                     if (item.isPinned) {
                         Text(
                             text = "Pinned",
                             style = MaterialTheme.typography.labelLarge,
-                            color = Color.White
+                            color = cardTitleColor
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -398,7 +403,7 @@ private fun HomeCard(
                     .align(Alignment.BottomEnd)
                     .padding(end = 12.dp, bottom = 10.dp),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFFD6D6D6)
+                color = cardSubColor
             )
 
             if (isSelected) {
