@@ -80,6 +80,8 @@ fun DrawingEditorScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentStrokePoints = remember { mutableStateListOf<DrawPoint>() }
     var showColorPicker by remember { mutableStateOf(false) }
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
+    val canvasBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -140,7 +142,7 @@ fun DrawingEditorScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 10.dp, vertical = 8.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
+                .background(surfaceVariantColor, RoundedCornerShape(20.dp))
                 .pointerInput(uiState.selectedColor, uiState.strokeWidth, uiState.selectedTool) {
                     detectDragGestures(
                         onDragStart = { offset ->
@@ -164,7 +166,7 @@ fun DrawingEditorScreen(
                 uiState.strokes.forEach { stroke ->
                     stroke.points.zipWithNext { start, end ->
                         drawLine(
-                            color = if (stroke.isEraser) MaterialTheme.colorScheme.surfaceVariant else Color(stroke.color),
+                            color = if (stroke.isEraser) surfaceVariantColor else Color(stroke.color),
                             start = Offset(start.x, start.y),
                             end = Offset(end.x, end.y),
                             strokeWidth = stroke.width,
@@ -175,7 +177,7 @@ fun DrawingEditorScreen(
 
                 currentStrokePoints.zipWithNext { start, end ->
                     drawLine(
-                        color = if (uiState.selectedTool == DrawingTool.Eraser) MaterialTheme.colorScheme.surfaceVariant else Color(uiState.selectedColor),
+                        color = if (uiState.selectedTool == DrawingTool.Eraser) surfaceVariantColor else Color(uiState.selectedColor),
                         start = Offset(start.x, start.y),
                         end = Offset(end.x, end.y),
                         strokeWidth = uiState.strokeWidth,
@@ -184,7 +186,7 @@ fun DrawingEditorScreen(
                 }
 
                 drawRect(
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    color = canvasBorderColor,
                     style = Stroke(width = 1.dp.toPx())
                 )
             }
