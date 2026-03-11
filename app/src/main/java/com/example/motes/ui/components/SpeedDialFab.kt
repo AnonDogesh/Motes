@@ -3,8 +3,8 @@ package com.example.motes.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -21,10 +21,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Checklist
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
@@ -55,12 +54,6 @@ fun SpeedDialFab(
         animationSpec = spring(dampingRatio = 0.8f),
         label = "speed_dial_main_rotation"
     )
-    val actionsAlpha by animateFloatAsState(
-        targetValue = if (expanded) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.85f),
-        label = "speed_dial_actions_alpha"
-    )
-
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = expanded,
@@ -84,13 +77,12 @@ fun SpeedDialFab(
         ) {
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn() + scaleIn(initialScale = 0.9f),
-                exit = fadeOut() + scaleOut(targetScale = 0.9f)
+                enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
             ) {
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.alpha(actionsAlpha)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     ExtendedFloatingActionButton(
                         text = { Text("New Note") },
@@ -102,7 +94,8 @@ fun SpeedDialFab(
                         expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
                     ExtendedFloatingActionButton(
                         text = { Text("New Checklist") },
@@ -114,7 +107,8 @@ fun SpeedDialFab(
                         expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
                     ExtendedFloatingActionButton(
                         text = { Text("New Drawing") },
@@ -126,17 +120,10 @@ fun SpeedDialFab(
                         expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
 
-                    FloatingActionButton(
-                        onClick = { expanded = false },
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        shape = CircleShape
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = null)
-                    }
                 }
             }
 
@@ -146,7 +133,8 @@ fun SpeedDialFab(
                 onClick = { expanded = !expanded },
                 containerColor = Accent,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape
+                shape = CircleShape,
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
             ) {
                 Text(
                     text = "+",

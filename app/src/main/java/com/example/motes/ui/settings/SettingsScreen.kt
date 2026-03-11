@@ -78,7 +78,7 @@ fun SettingsScreen(navController: NavController) {
         containerColor = screenBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Settings", color = mainText) },
+                title = { Text("Settings", color = accent) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = mainText)
@@ -232,7 +232,7 @@ fun SettingsScreen(navController: NavController) {
 private fun SectionTitle(title: String) {
     Text(
         text = title,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.onSurface,
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(top = 6.dp)
     )

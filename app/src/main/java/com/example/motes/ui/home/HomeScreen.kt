@@ -110,6 +110,12 @@ fun HomeScreen(
     val selectionMode = uiMode as? UiMode.Selection
     val selectedKeys = selectionMode?.selectedKeys.orEmpty()
     val inSelectionMode = selectionMode != null
+    val defaultTitle = when (filter) {
+        HomeFilter.ALL -> "Motes"
+        HomeFilter.NOTE -> "Notes"
+        HomeFilter.CHECKLIST -> "Checklists"
+        HomeFilter.DRAWING -> "Drawings"
+    }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     BackHandler(enabled = inSelectionMode) {
@@ -121,7 +127,7 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (inSelectionMode) "${selectedKeys.size} selected" else "Motes",
+                        if (inSelectionMode) "${selectedKeys.size} selected" else defaultTitle,
                         style = MaterialTheme.typography.titleLarge,
                         color = if (inSelectionMode) MaterialTheme.colorScheme.onSurface else Accent
                     )

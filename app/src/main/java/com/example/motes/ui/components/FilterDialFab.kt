@@ -3,8 +3,8 @@ package com.example.motes.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import com.example.motes.ui.home.HomeFilter
@@ -53,12 +53,6 @@ fun FilterDialFab(
         animationSpec = spring(dampingRatio = 0.85f),
         label = "filter_dial_main_scale"
     )
-    val actionsAlpha by animateFloatAsState(
-        targetValue = if (expanded) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.85f),
-        label = "filter_dial_actions_alpha"
-    )
-
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
             Box(
@@ -78,13 +72,12 @@ fun FilterDialFab(
         ) {
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn() + scaleIn(initialScale = 0.9f),
-                exit = fadeOut() + scaleOut(targetScale = 0.9f)
+                enter = slideInVertically(initialOffsetY = { it / 2 }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it / 2 }) + fadeOut()
             ) {
                 Column(
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.alpha(actionsAlpha)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     ExtendedFloatingActionButton(
                         text = { Text(if (activeFilter == HomeFilter.NOTE) "Notes ✓" else "Notes") },
@@ -96,7 +89,8 @@ fun FilterDialFab(
                         expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
                     ExtendedFloatingActionButton(
                         text = { Text(if (activeFilter == HomeFilter.CHECKLIST) "Checklists ✓" else "Checklists") },
@@ -108,7 +102,8 @@ fun FilterDialFab(
                         expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
                     ExtendedFloatingActionButton(
                         text = { Text(if (activeFilter == HomeFilter.DRAWING) "Drawings ✓" else "Drawings") },
@@ -120,7 +115,8 @@ fun FilterDialFab(
                         expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
                     ExtendedFloatingActionButton(
                         text = { Text("Archive") },
@@ -132,7 +128,8 @@ fun FilterDialFab(
                         expanded = true,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
                 }
             }
@@ -143,7 +140,8 @@ fun FilterDialFab(
                 onClick = { expanded = !expanded },
                 containerColor = Accent,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.scale(mainFabScale)
+                modifier = Modifier.scale(mainFabScale),
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.FilterList,
