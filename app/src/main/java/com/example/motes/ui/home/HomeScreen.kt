@@ -287,7 +287,7 @@ private fun HomeCard(
     )
     val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
     val cardTitleColor = if (isLightTheme) DarkBlueBase else Color.White
-    val cardSubColor = if (isLightTheme) DarkBlueBase.copy(alpha = 0.86f) else Color(0xFFEAEAEA)
+    val cardSubColor = if (isLightTheme) DarkBlueBase.copy(alpha = 0.82f) else Color(0xFFEAEAEA)
 
     Card(
         modifier = Modifier
@@ -310,7 +310,7 @@ private fun HomeCard(
             containerColor = when {
                 isSelected -> MaterialTheme.colorScheme.surfaceVariant
                 item.cardColor != null -> Color(item.cardColor)
-                else -> Color(0xFF455A64)
+                else -> MaterialTheme.colorScheme.surfaceVariant
             },
             contentColor = Color.White
         ),
@@ -346,7 +346,7 @@ private fun HomeCard(
                             .fillMaxWidth()
                             .aspectRatio(16f / 9f)
                             .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                            .background(Color(0x22000000))
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                     )
                 }
 
@@ -378,7 +378,7 @@ private fun HomeCard(
                             progress = { item.checklistProgress ?: 0f },
                             modifier = Modifier.fillMaxWidth(),
                             color = if ((item.checklistProgress ?: 0f) >= 0.999f) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
-                            trackColor = Color(0xFF6D6D6D)
+                            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
                         )
                         Text(
                             text = item.checklistCompletionLabel ?: "0 checked • 0 left",

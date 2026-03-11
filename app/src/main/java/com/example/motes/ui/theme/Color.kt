@@ -8,9 +8,9 @@ private val BrandTextPrimary = Color(0xFFEAEFEF)
 private val BrandTextSecondary = Color(0xFFBFC9D1)
 private val BrandAccent = Color(0xFFFF9B51)
 
-val LightBackground = Color(0xFFF5EEDC)
-val LightSurface = Color(0xFFEFE5D0)
-val LightSurfaceVariant = Color(0xFFE3D8C1)
+val LightBackground = Color(0xFFEADDC5)
+val LightSurface = Color(0xFFF5EEDC)
+val LightSurfaceVariant = Color(0xFFFBF4E6)
 
 /**
  * App design-system tokens.

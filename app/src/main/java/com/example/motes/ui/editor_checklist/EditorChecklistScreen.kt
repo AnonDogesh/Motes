@@ -60,8 +60,6 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
-import com.example.motes.ui.theme.SurfaceHigh
-import com.example.motes.ui.theme.SurfaceMedium
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,7 +167,7 @@ fun ChecklistEditorScreen(
                     .fillMaxWidth()
                     .padding(bottom = 6.dp),
                 color = if (uiState.progress >= 0.999f) Color(0xFF4CAF50) else Accent,
-                trackColor = SurfaceHigh
+                trackColor = MaterialTheme.colorScheme.surface
             )
             Text(
                 text = uiState.completionLabel,
@@ -238,7 +236,7 @@ private fun ChecklistRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceMedium, RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp))
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -305,7 +303,7 @@ private fun AddItemInputRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SurfaceMedium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .navigationBarsPadding()
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -315,7 +313,7 @@ private fun AddItemInputRow(
             onValueChange = onValueChange,
             modifier = Modifier
                 .weight(1f)
-                .background(SurfaceHigh, RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = SolidColor(Accent),

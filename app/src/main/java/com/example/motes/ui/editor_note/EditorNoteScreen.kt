@@ -77,8 +77,6 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
-import com.example.motes.ui.theme.SurfaceHigh
-import com.example.motes.ui.theme.SurfaceMedium
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -268,7 +266,7 @@ fun NoteEditorScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(SurfaceMedium, RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
                                 .padding(8.dp)
                         ) {
                             AndroidView(
@@ -380,7 +378,7 @@ private fun NoteFormattingToolbar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SurfaceMedium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .navigationBarsPadding()
             .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -444,7 +442,7 @@ private fun FormatButton(
     Box(
         modifier = Modifier
             .background(
-                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else SurfaceHigh,
+                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(10.dp)
             )
             .clickable(onClick = onClick)

@@ -57,8 +57,6 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
-import com.example.motes.ui.theme.SurfaceHigh
-import com.example.motes.ui.theme.SurfaceMedium
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,7 +140,7 @@ fun DrawingEditorScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 10.dp, vertical = 8.dp)
-                .background(SurfaceMedium, RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
                 .pointerInput(uiState.selectedColor, uiState.strokeWidth, uiState.selectedTool) {
                     detectDragGestures(
                         onDragStart = { offset ->
@@ -166,7 +164,7 @@ fun DrawingEditorScreen(
                 uiState.strokes.forEach { stroke ->
                     stroke.points.zipWithNext { start, end ->
                         drawLine(
-                            color = if (stroke.isEraser) SurfaceMedium else Color(stroke.color),
+                            color = if (stroke.isEraser) MaterialTheme.colorScheme.surfaceVariant else Color(stroke.color),
                             start = Offset(start.x, start.y),
                             end = Offset(end.x, end.y),
                             strokeWidth = stroke.width,
@@ -177,7 +175,7 @@ fun DrawingEditorScreen(
 
                 currentStrokePoints.zipWithNext { start, end ->
                     drawLine(
-                        color = if (uiState.selectedTool == DrawingTool.Eraser) SurfaceMedium else Color(uiState.selectedColor),
+                        color = if (uiState.selectedTool == DrawingTool.Eraser) MaterialTheme.colorScheme.surfaceVariant else Color(uiState.selectedColor),
                         start = Offset(start.x, start.y),
                         end = Offset(end.x, end.y),
                         strokeWidth = uiState.strokeWidth,
@@ -186,7 +184,7 @@ fun DrawingEditorScreen(
                 }
 
                 drawRect(
-                    color = SurfaceHigh.copy(alpha = 0.2f),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
                     style = Stroke(width = 1.dp.toPx())
                 )
             }
@@ -233,7 +231,7 @@ private fun DrawingBottomControls(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SurfaceMedium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .navigationBarsPadding()
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
