@@ -372,7 +372,7 @@ private fun HomeCard(
                         LinearProgressIndicator(
                             progress = { item.checklistProgress ?: 0f },
                             modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if ((item.checklistProgress ?: 0f) >= 0.999f) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
                             trackColor = Color(0xFF6D6D6D)
                         )
                         Text(

@@ -168,7 +168,7 @@ fun ChecklistEditorScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 6.dp),
-                color = Accent,
+                color = if (uiState.progress >= 0.999f) Color(0xFF4CAF50) else Accent,
                 trackColor = SurfaceHigh
             )
             Text(

@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
@@ -65,7 +64,7 @@ fun SettingsScreen(navController: NavController) {
     var selectedTheme by remember { mutableStateOf("Dark") }
     var compactLayout by remember { mutableStateOf(false) }
     var notificationsEnabled by remember { mutableStateOf(true) }
-    var accountName by remember { mutableStateOf("Alex Morgan") }
+    var accountName by remember { mutableStateOf("Unknown") }
     var draftAccountName by remember { mutableStateOf(accountName) }
     var showRenameDialog by remember { mutableStateOf(false) }
 
@@ -206,20 +205,7 @@ fun SettingsScreen(navController: NavController) {
 
             SectionTitle("SYNC & DATA")
             SettingsCard {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    SimpleActionRow(icon = Icons.Default.Download, title = "Export Notes", onClick = { })
-                    HorizontalDivider(color = Color(0xFF344556))
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFFF7A7A))
-                        Spacer(Modifier.width(10.dp))
-                        Text("Clear Cache", color = Color(0xFFFF7A7A), style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text("124 MB", color = MutedText)
-                    }
-                }
+                SimpleActionRow(icon = Icons.Default.Download, title = "Export Notes", onClick = { })
             }
 
             Spacer(Modifier.height(8.dp))
