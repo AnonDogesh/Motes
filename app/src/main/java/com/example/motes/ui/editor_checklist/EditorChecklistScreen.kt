@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -50,6 +52,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import com.example.motes.notifications.ChecklistReminderScheduler
+import com.example.motes.ui.settings.NotificationSettingsState
+import java.util.Calendar
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -90,6 +95,7 @@ fun ChecklistEditorScreen(
     val checklistKey = uiState.checklistId.ifBlank { "new" }
     var newItemText by rememberSaveable(checklistKey) { mutableStateOf("") }
     var showColorPicker by rememberSaveable(checklistKey) { mutableStateOf(false) }
+    var reminderError by rememberSaveable { mutableStateOf<String?>(null) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -115,6 +121,48 @@ fun ChecklistEditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        if (!NotificationSettingsState.enabled) {
+                            reminderError = "Enable notifications in Settings to use reminders."
+                            return@IconButton
+                        }
+                        val now = System.currentTimeMillis()
+                        val existing = uiState.reminderAt?.takeIf { it > now } ?: now
+                        val calendar = Calendar.getInstance().apply { timeInMillis = existing }
+                        android.app.TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                val selected = Calendar.getInstance().apply {
+                                    timeInMillis = now
+                                    set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                    set(Calendar.MINUTE, minute)
+                                    set(Calendar.SECOND, 0)
+                                    set(Calendar.MILLISECOND, 0)
+                                    if (timeInMillis <= now) add(Calendar.DAY_OF_YEAR, 1)
+                                }.timeInMillis
+                                if (!viewModel.canSetReminderAt(selected)) {
+                                    reminderError = "Reminder must be within 24 hours of checklist creation or last edit."
+                                } else {
+                                    viewModel.setReminderAt(selected)
+                                    ChecklistReminderScheduler.schedule(
+                                        context = context,
+                                        checklistId = uiState.checklistId,
+                                        title = uiState.title.ifBlank { "Checklist reminder" },
+                                        triggerAtMillis = selected
+                                    )
+                                }
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            false
+                        ).show()
+                    }) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Set reminder",
+                            tint = if (uiState.reminderAt != null) Accent else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     IconButton(onClick = { showColorPicker = true }) {
                         Icon(Icons.Default.Palette, contentDescription = "Pick checklist color", tint = displayedCardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
                     }
@@ -132,7 +180,16 @@ fun ChecklistEditorScreen(
             )
         }
     ) { innerPadding ->
-        if (showColorPicker) {
+        reminderError?.let { message ->
+        AlertDialog(
+            onDismissRequest = { reminderError = null },
+            title = { Text("Reminder") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = { reminderError = null }) { Text("OK") } }
+        )
+    }
+
+    if (showColorPicker) {
             ColorPickerDialogChecklist(
                 selectedColor = displayedCardColor,
                 onColorSelected = { selected ->
@@ -255,7 +312,7 @@ private fun ChecklistRow(
                 value = item.text,
                 onValueChange = onTextChange,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .padding(horizontal = 4.dp, vertical = 10.dp),
                 textStyle = MaterialTheme.typography.bodyLarge.merge(
                     TextStyle(
@@ -275,6 +332,13 @@ private fun ChecklistRow(
                     innerTextField()
                 }
             )
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Delete item",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

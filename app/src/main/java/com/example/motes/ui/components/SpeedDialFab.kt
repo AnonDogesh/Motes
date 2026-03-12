@@ -57,7 +57,7 @@ fun SpeedDialFab(
         label = "speed_dial_main_rotation"
     )
     val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
-    val menuContainerColor = if (isLightTheme) MaterialTheme.colorScheme.surface else Color(0xFF324754)
+    val menuContainerColor = if (isLightTheme) MaterialTheme.colorScheme.surface else Color(0xFF4A6270)
     val menuContentColor = if (isLightTheme) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(

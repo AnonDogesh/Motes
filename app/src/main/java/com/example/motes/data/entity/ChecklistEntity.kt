@@ -13,5 +13,6 @@ data class ChecklistEntity(
     val updatedAt: Long,
     val isPinned: Boolean,
     val isArchived: Boolean,
-    val cardColor: Long? = null
+    val cardColor: Long? = null,
+    val reminderAt: Long? = null
 )

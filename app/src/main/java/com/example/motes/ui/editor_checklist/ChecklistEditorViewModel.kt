@@ -33,7 +33,9 @@ data class ChecklistEditorUiState(
     val progress: Float = 0f,
     val completionLabel: String = "0 / 0 completed",
     val createdAt: Long = System.currentTimeMillis(),
-    val cardColor: Long? = null
+    val cardColor: Long? = null,
+    val reminderAt: Long? = null,
+    val lastEditedAt: Long = 0L
 )
 
 class ChecklistEditorViewModel(
@@ -81,6 +83,15 @@ class ChecklistEditorViewModel(
         _uiState.update { it.copy(cardColor = color) }
     }
 
+    fun setReminderAt(reminderAt: Long?) {
+        _uiState.update { it.copy(reminderAt = reminderAt) }
+    }
+
+    fun canSetReminderAt(reminderAt: Long): Boolean {
+        val base = maxOf(uiState.value.createdAt, uiState.value.lastEditedAt)
+        return reminderAt <= base + 24L * 60L * 60L * 1000L
+    }
+
     private fun observeChecklist() {
         val id = editorId
         viewModelScope.launch {
@@ -93,7 +104,9 @@ class ChecklistEditorViewModel(
                             ChecklistEditorItemUi(text = item.text, isChecked = item.isChecked)
                         },
                         createdAt = checklist.createdAt,
-                        cardColor = checklist.cardColor
+                        cardColor = checklist.cardColor,
+                        reminderAt = checklist.reminderAt,
+                        lastEditedAt = checklist.updatedAt
                     )
                 )
             }
@@ -117,10 +130,16 @@ class ChecklistEditorViewModel(
                             updatedAt = System.currentTimeMillis(),
                             isPinned = false,
                             isArchived = false,
-                            cardColor = state.cardColor
+                            cardColor = state.cardColor,
+                            reminderAt = state.reminderAt
                         )
                     )
-                    _uiState.update { it.copy(lastEditedLabel = "Last edited just now") }
+                    _uiState.update {
+                        it.copy(
+                            lastEditedLabel = "Last edited just now",
+                            lastEditedAt = System.currentTimeMillis()
+                        )
+                    }
                 }
         }
     }

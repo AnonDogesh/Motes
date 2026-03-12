@@ -62,7 +62,7 @@ import com.example.motes.ui.theme.ThemeMode
 fun SettingsScreen(navController: NavController) {
     var selectedTheme by remember { mutableStateOf(AppThemeState.mode.name.lowercase().replaceFirstChar { it.uppercase() }) }
     var compactLayout by remember { mutableStateOf(false) }
-    var notificationsEnabled by remember { mutableStateOf(true) }
+    var notificationsEnabled by remember { mutableStateOf(NotificationSettingsState.enabled) }
     var accountName by remember { mutableStateOf("Unknown") }
     var draftAccountName by remember { mutableStateOf(accountName) }
     var showRenameDialog by remember { mutableStateOf(false) }
@@ -211,7 +211,7 @@ fun SettingsScreen(navController: NavController) {
                         Text("Push Notifications", color = mainText, style = MaterialTheme.typography.titleMedium)
                         Text("Daily summaries and reminders", color = mutedText, style = MaterialTheme.typography.bodySmall)
                     }
-                    Switch(checked = notificationsEnabled, onCheckedChange = { notificationsEnabled = it })
+                    Switch(checked = notificationsEnabled, onCheckedChange = { notificationsEnabled = it; NotificationSettingsState.enabled = it })
                 }
             }
 
