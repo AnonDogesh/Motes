@@ -34,9 +34,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -170,13 +170,13 @@ fun HomeScreen(
         }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
-            LazyVerticalGrid(
+            LazyVerticalStaggeredGrid(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                columns = GridCells.Adaptive(180.dp),
+                columns = StaggeredGridCells.Adaptive(180.dp),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalItemSpacing = 12.dp,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(items = items, key = { it.id }) { item ->

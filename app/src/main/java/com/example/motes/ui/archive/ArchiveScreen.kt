@@ -68,7 +68,7 @@ fun ArchiveScreen(navController: NavController) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(if (selectedCount > 0) "$selectedCount selected" else "Archive") },
+                title = { Text(if (selectedCount > 0) "$selectedCount selected" else "Archive", color = if (selectedCount > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")

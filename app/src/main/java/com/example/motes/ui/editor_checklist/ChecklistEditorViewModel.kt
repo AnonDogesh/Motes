@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
@@ -83,19 +84,18 @@ class ChecklistEditorViewModel(
     private fun observeChecklist() {
         val id = editorId
         viewModelScope.launch {
-            checklistRepository.observeById(id).collectLatest { checklist ->
-                if (checklist != null) {
-                    _uiState.update {
-                        calculateDerived(
-                            it.copy(
-                                title = checklist.title,
-                                items = checklist.items.map { item -> ChecklistEditorItemUi(text = item.text, isChecked = item.isChecked) },
-                                createdAt = checklist.createdAt,
-                                cardColor = checklist.cardColor
-                            )
-                        )
-                    }
-                }
+            val checklist = checklistRepository.observeById(id).first() ?: return@launch
+            _uiState.update {
+                calculateDerived(
+                    it.copy(
+                        title = checklist.title,
+                        items = checklist.items.map { item ->
+                            ChecklistEditorItemUi(text = item.text, isChecked = item.isChecked)
+                        },
+                        createdAt = checklist.createdAt,
+                        cardColor = checklist.cardColor
+                    )
+                )
             }
         }
     }

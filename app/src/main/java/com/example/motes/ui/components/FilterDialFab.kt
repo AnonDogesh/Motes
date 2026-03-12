@@ -33,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.example.motes.ui.home.HomeFilter
 import com.example.motes.ui.theme.Accent
@@ -53,6 +55,9 @@ fun FilterDialFab(
         animationSpec = spring(dampingRatio = 0.85f),
         label = "filter_dial_main_scale"
     )
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val menuContainerColor = if (isLightTheme) MaterialTheme.colorScheme.surface else Color(0xFF324754)
+    val menuContentColor = if (isLightTheme) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
             Box(
@@ -87,8 +92,8 @@ fun FilterDialFab(
                             onNotes()
                         },
                         expanded = true,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        containerColor = menuContainerColor,
+                        contentColor = menuContentColor,
                         shape = RoundedCornerShape(18.dp),
                         elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
@@ -100,8 +105,8 @@ fun FilterDialFab(
                             onChecklists()
                         },
                         expanded = true,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        containerColor = menuContainerColor,
+                        contentColor = menuContentColor,
                         shape = RoundedCornerShape(18.dp),
                         elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
@@ -113,8 +118,8 @@ fun FilterDialFab(
                             onDrawings()
                         },
                         expanded = true,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        containerColor = menuContainerColor,
+                        contentColor = menuContentColor,
                         shape = RoundedCornerShape(18.dp),
                         elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
@@ -126,8 +131,8 @@ fun FilterDialFab(
                             onArchive()
                         },
                         expanded = true,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
+                        containerColor = menuContainerColor,
+                        contentColor = menuContentColor,
                         shape = RoundedCornerShape(18.dp),
                         elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
