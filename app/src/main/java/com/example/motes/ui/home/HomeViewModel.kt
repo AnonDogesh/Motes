@@ -269,8 +269,7 @@ class HomeViewModel(
                 updatedAt = now,
                 isPinned = false,
                 isArchived = false,
-                cardColor = null,
-                reminderAt = null
+                cardColor = null
             )
             checklistRepository.upsert(checklist)
             onCreated(checklist.id)
@@ -287,8 +286,7 @@ class HomeViewModel(
                 updatedAt = now,
                 isPinned = false,
                 isArchived = false,
-                cardColor = null,
-                reminderAt = null
+                cardColor = null
             )
             drawingRepository.upsert(drawing)
             onCreated(drawing.id)

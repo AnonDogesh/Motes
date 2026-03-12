@@ -9,7 +9,6 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.motes.MainActivity
-import com.example.motes.R
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -31,7 +30,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val title = ChecklistReminderScheduler.titleFromIntent(intent).ifBlank { "Checklist reminder" }
         val checklistId = ChecklistReminderScheduler.checklistIdFromIntent(intent)
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText("Reminder for your checklist")
             .setContentIntent(launchPendingIntent)
