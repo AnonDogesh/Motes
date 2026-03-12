@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -48,7 +50,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import com.example.motes.notifications.ChecklistReminderScheduler
+import com.example.motes.ui.settings.NotificationSettingsState
+import java.util.Calendar
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -60,8 +66,10 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
-import com.example.motes.ui.theme.SurfaceHigh
-import com.example.motes.ui.theme.SurfaceMedium
+import com.example.motes.ui.theme.DarkCardPalette
+import com.example.motes.ui.theme.LightCardPalette
+import com.example.motes.ui.theme.cardColorForDisplay
+import com.example.motes.ui.theme.cardColorForStorage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,9 +90,12 @@ fun ChecklistEditorScreen(
         }
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val displayedCardColor = uiState.cardColor?.let { cardColorForDisplay(it, isLightTheme) }
     val checklistKey = uiState.checklistId.ifBlank { "new" }
     var newItemText by rememberSaveable(checklistKey) { mutableStateOf("") }
     var showColorPicker by rememberSaveable(checklistKey) { mutableStateOf(false) }
+    var reminderError by rememberSaveable { mutableStateOf<String?>(null) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -110,8 +121,51 @@ fun ChecklistEditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        NotificationSettingsState.refreshFromSystem(context)
+                        if (!NotificationSettingsState.enabled) {
+                            reminderError = "Enable notifications in Settings to use reminders."
+                            return@IconButton
+                        }
+                        val now = System.currentTimeMillis()
+                        val existing = uiState.reminderAt?.takeIf { it > now } ?: now
+                        val calendar = Calendar.getInstance().apply { timeInMillis = existing }
+                        android.app.TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                val selected = Calendar.getInstance().apply {
+                                    timeInMillis = now
+                                    set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                    set(Calendar.MINUTE, minute)
+                                    set(Calendar.SECOND, 0)
+                                    set(Calendar.MILLISECOND, 0)
+                                    if (timeInMillis <= now) add(Calendar.DAY_OF_YEAR, 1)
+                                }.timeInMillis
+                                if (!viewModel.canSetReminderAt(selected)) {
+                                    reminderError = "Reminder must be within 24 hours of checklist creation or last edit."
+                                } else {
+                                    viewModel.setReminderAt(selected)
+                                    ChecklistReminderScheduler.schedule(
+                                        context = context,
+                                        checklistId = uiState.checklistId,
+                                        title = uiState.title.ifBlank { "Checklist reminder" },
+                                        triggerAtMillis = selected
+                                    )
+                                }
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            false
+                        ).show()
+                    }) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Set reminder",
+                            tint = if (uiState.reminderAt != null) Accent else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     IconButton(onClick = { showColorPicker = true }) {
-                        Icon(Icons.Default.Palette, contentDescription = "Pick checklist color", tint = uiState.cardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.Default.Palette, contentDescription = "Pick checklist color", tint = displayedCardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
                     }
                 }
             )
@@ -127,10 +181,22 @@ fun ChecklistEditorScreen(
             )
         }
     ) { innerPadding ->
-        if (showColorPicker) {
+        reminderError?.let { message ->
+        AlertDialog(
+            onDismissRequest = { reminderError = null },
+            title = { Text("Reminder") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = { reminderError = null }) { Text("OK") } }
+        )
+    }
+
+    if (showColorPicker) {
             ColorPickerDialogChecklist(
-                selectedColor = uiState.cardColor,
-                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                selectedColor = displayedCardColor,
+                onColorSelected = { selected ->
+                    viewModel.setCardColor(selected?.let { cardColorForStorage(it, isLightTheme) })
+                    showColorPicker = false
+                },
                 onDismiss = { showColorPicker = false }
             )
         }
@@ -168,8 +234,8 @@ fun ChecklistEditorScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 6.dp),
-                color = Accent,
-                trackColor = SurfaceHigh
+                color = if (uiState.progress >= 0.999f) Color(0xFF4CAF50) else Accent,
+                trackColor = MaterialTheme.colorScheme.surface
             )
             Text(
                 text = uiState.completionLabel,
@@ -238,7 +304,7 @@ private fun ChecklistRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceMedium, RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp))
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -247,7 +313,7 @@ private fun ChecklistRow(
                 value = item.text,
                 onValueChange = onTextChange,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
                     .padding(horizontal = 4.dp, vertical = 10.dp),
                 textStyle = MaterialTheme.typography.bodyLarge.merge(
                     TextStyle(
@@ -267,6 +333,13 @@ private fun ChecklistRow(
                     innerTextField()
                 }
             )
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Delete item",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -278,7 +351,8 @@ private fun ColorPickerDialogChecklist(
     onColorSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val palette = listOf(0xFF6B5E2EL, 0xFF7A4A2BL, 0xFF6A3B3BL, 0xFF5A3F6EL,0xFF3F4F74L, 0xFF2F5D78L, 0xFF2F6F6DL, 0xFF3E6B3EL,0xFF5E6A2EL, 0xFF6B6B2EL, 0xFF5C4A3BL, 0xFF4E5B63L)
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val palette = if (isLightTheme) LightCardPalette else DarkCardPalette
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select checklist color") },
@@ -305,7 +379,7 @@ private fun AddItemInputRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SurfaceMedium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .navigationBarsPadding()
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -315,7 +389,7 @@ private fun AddItemInputRow(
             onValueChange = onValueChange,
             modifier = Modifier
                 .weight(1f)
-                .background(SurfaceHigh, RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = SolidColor(Accent),

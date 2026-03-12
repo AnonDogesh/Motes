@@ -24,7 +24,9 @@ data class ArchiveItemUi(
     val type: ArchiveItemType,
     val title: String,
     val preview: String,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val checklistProgress: Float? = null,
+    val checklistCompletionLabel: String? = null
 )
 
 data class ArchiveUiState(
@@ -123,14 +125,21 @@ private fun NoteEntity.toArchiveItemUi(): ArchiveItemUi = ArchiveItemUi(
     updatedAt = updatedAt
 )
 
-private fun ChecklistEntity.toArchiveItemUi(): ArchiveItemUi = ArchiveItemUi(
-    key = "checklist:$id",
-    id = id,
-    type = ArchiveItemType.CHECKLIST,
-    title = title.ifBlank { "Untitled checklist" },
-    preview = items.joinToString(" • ") { it.text }.take(120).ifBlank { "(empty checklist)" },
-    updatedAt = updatedAt
-)
+private fun ChecklistEntity.toArchiveItemUi(): ArchiveItemUi {
+    val checkedCount = items.count { it.isChecked }
+    val totalCount = items.size
+    val progress = if (totalCount == 0) 0f else checkedCount.toFloat() / totalCount.toFloat()
+    return ArchiveItemUi(
+        key = "checklist:$id",
+        id = id,
+        type = ArchiveItemType.CHECKLIST,
+        title = title.ifBlank { "Untitled checklist" },
+        preview = items.joinToString(" • ") { it.text }.take(120).ifBlank { "(empty checklist)" },
+        updatedAt = updatedAt,
+        checklistProgress = progress,
+        checklistCompletionLabel = "$checkedCount checked • ${totalCount - checkedCount} left"
+    )
+}
 
 private fun DrawingEntity.toArchiveItemUi(): ArchiveItemUi = ArchiveItemUi(
     key = "drawing:$id",

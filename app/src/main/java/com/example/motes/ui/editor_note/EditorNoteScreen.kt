@@ -10,6 +10,7 @@ import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
 import android.widget.EditText
 import android.widget.ImageView
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -53,17 +54,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -76,8 +79,11 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
-import com.example.motes.ui.theme.SurfaceHigh
-import com.example.motes.ui.theme.SurfaceMedium
+import com.example.motes.ui.theme.DarkCardPalette
+import com.example.motes.ui.theme.LightCardPalette
+import com.example.motes.ui.theme.cardColorForDisplay
+import com.example.motes.ui.theme.cardColorForStorage
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
@@ -101,18 +107,17 @@ fun NoteEditorScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var bodyText by remember { mutableStateOf(uiState.body) }
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val displayedCardColor = uiState.cardColor?.let { cardColorForDisplay(it, isLightTheme) }
+    val bodyTextColor = MaterialTheme.colorScheme.onSurface.toArgb()
+    val hintTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f).toArgb()
+    val screenScope = rememberCoroutineScope()
+    var isExiting by remember { mutableStateOf(false) }
     var bodyEditText by remember { mutableStateOf<EditText?>(null) }
     var lastChangeStart by remember { mutableIntStateOf(0) }
     var lastChangeBefore by remember { mutableIntStateOf(0) }
     var lastChangeCount by remember { mutableIntStateOf(0) }
     var showColorPicker by remember { mutableStateOf(false) }
-
-    LaunchedEffect(uiState.body) {
-        if (bodyText != uiState.body) {
-            bodyText = uiState.body
-        }
-    }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -125,6 +130,7 @@ fun NoteEditorScreen(
     val currentItalicEnabled = rememberUpdatedState(uiState.isItalicEnabled)
     val currentUnderlineEnabled = rememberUpdatedState(uiState.isUnderlineEnabled)
     val currentOnBodyChanged = rememberUpdatedState(viewModel::onBodyChanged)
+    val currentBodyValue = rememberUpdatedState(uiState.body)
     val currentFontFamily = rememberUpdatedState(uiState.selectedFontFamily)
     val fontOptions = remember {
         listOf(
@@ -140,6 +146,17 @@ fun NoteEditorScreen(
             "sans-serif-medium" to "Medium"
         )
     }
+
+    fun saveAndExit() {
+        if (isExiting) return
+        isExiting = true
+        screenScope.launch {
+            viewModel.saveNow()
+            navController.popBackStack()
+        }
+    }
+
+    BackHandler(onBack = ::saveAndExit)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -160,7 +177,7 @@ fun NoteEditorScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = ::saveAndExit) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -214,8 +231,11 @@ fun NoteEditorScreen(
     ) { innerPadding ->
         if (showColorPicker) {
             ColorPickerDialog(
-                selectedColor = uiState.cardColor,
-                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                selectedColor = displayedCardColor,
+                onColorSelected = { selected ->
+                    viewModel.setCardColor(selected?.let { cardColorForStorage(it, isLightTheme) })
+                    showColorPicker = false
+                },
                 onDismiss = { showColorPicker = false }
             )
         }
@@ -259,7 +279,7 @@ fun NoteEditorScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(SurfaceMedium, RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
                                 .padding(8.dp)
                         ) {
                             AndroidView(
@@ -294,12 +314,14 @@ fun NoteEditorScreen(
                 factory = { ctx ->
                     EditText(ctx).apply {
                         setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                        setTextColor(android.graphics.Color.parseColor("#E9EEF2"))
+                        setTextColor(bodyTextColor)
                         hint = "Start writing your note..."
-                        setHintTextColor(android.graphics.Color.parseColor("#99E9EEF2"))
+                        setHintTextColor(hintTextColor)
                         gravity = android.view.Gravity.TOP or android.view.Gravity.START
                         textSize = 18f
                         typeface = Typeface.create(currentFontFamily.value, Typeface.NORMAL)
+                        setText(uiState.body)
+                        setSelection(text.length)
                         bodyEditText = this
                         addTextChangedListener(object : TextWatcher {
                             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -324,18 +346,22 @@ fun NoteEditorScreen(
                                         s.setSpan(UnderlineSpan(), lastChangeStart, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                                     }
                                 }
-                                bodyText = s.toString()
-                                currentOnBodyChanged.value(bodyText)
+                                val newBody = s.toString()
+                                if (newBody != currentBodyValue.value) {
+                                    currentOnBodyChanged.value(newBody)
+                                }
                             }
                         })
                     }
                 },
                 update = { editText ->
-                    if (editText.text.toString() != bodyText) {
-                        editText.setText(bodyText)
-                        editText.setSelection(bodyText.length)
+                    if (!editText.isFocused && editText.text.toString() != uiState.body) {
+                        editText.setText(uiState.body)
+                        editText.setSelection(editText.text.length)
                     }
                     editText.typeface = Typeface.create(currentFontFamily.value, Typeface.NORMAL)
+                    editText.setTextColor(bodyTextColor)
+                    editText.setHintTextColor(hintTextColor)
                     bodyEditText = editText
                 }
             )
@@ -367,7 +393,7 @@ private fun NoteFormattingToolbar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SurfaceMedium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .navigationBarsPadding()
             .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -431,7 +457,7 @@ private fun FormatButton(
     Box(
         modifier = Modifier
             .background(
-                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else SurfaceHigh,
+                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface,
                 RoundedCornerShape(10.dp)
             )
             .clickable(onClick = onClick)
@@ -453,11 +479,8 @@ private fun ColorPickerDialog(
     onColorSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val palette = listOf(
-        0xFF6B5E2EL, 0xFF7A4A2BL, 0xFF6A3B3BL, 0xFF5A3F6EL,
-        0xFF3F4F74L, 0xFF2F5D78L, 0xFF2F6F6DL, 0xFF3E6B3EL,
-        0xFF5E6A2EL, 0xFF6B6B2EL, 0xFF5C4A3BL, 0xFF4E5B63L
-    )
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val palette = if (isLightTheme) LightCardPalette else DarkCardPalette
 
     AlertDialog(
         onDismissRequest = onDismiss,

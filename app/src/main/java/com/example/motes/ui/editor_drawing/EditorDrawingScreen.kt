@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -57,8 +58,10 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
 import com.example.motes.ui.theme.Accent
-import com.example.motes.ui.theme.SurfaceHigh
-import com.example.motes.ui.theme.SurfaceMedium
+import com.example.motes.ui.theme.DarkCardPalette
+import com.example.motes.ui.theme.LightCardPalette
+import com.example.motes.ui.theme.cardColorForDisplay
+import com.example.motes.ui.theme.cardColorForStorage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,8 +83,12 @@ fun DrawingEditorScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val displayedCardColor = uiState.cardColor?.let { cardColorForDisplay(it, isLightTheme) }
     val currentStrokePoints = remember { mutableStateListOf<DrawPoint>() }
     var showColorPicker by remember { mutableStateOf(false) }
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
+    val canvasBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -111,7 +118,7 @@ fun DrawingEditorScreen(
                 },
                 actions = {
                     IconButton(onClick = { showColorPicker = true }) {
-                        Icon(Icons.Default.Palette, contentDescription = "Pick drawing color", tint = uiState.cardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
+                        Icon(Icons.Default.Palette, contentDescription = "Pick drawing color", tint = displayedCardColor?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurface)
                     }
                     TextButton(onClick = viewModel::undo) { Text("Undo") }
                     TextButton(onClick = viewModel::clear) { Text("Clear") }
@@ -131,8 +138,11 @@ fun DrawingEditorScreen(
     ) { innerPadding ->
         if (showColorPicker) {
             ColorPickerDialogDrawing(
-                selectedColor = uiState.cardColor,
-                onColorSelected = { viewModel.setCardColor(it); showColorPicker = false },
+                selectedColor = displayedCardColor,
+                onColorSelected = { selected ->
+                    viewModel.setCardColor(selected?.let { cardColorForStorage(it, isLightTheme) })
+                    showColorPicker = false
+                },
                 onDismiss = { showColorPicker = false }
             )
         }
@@ -142,7 +152,7 @@ fun DrawingEditorScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 10.dp, vertical = 8.dp)
-                .background(SurfaceMedium, RoundedCornerShape(20.dp))
+                .background(surfaceVariantColor, RoundedCornerShape(20.dp))
                 .pointerInput(uiState.selectedColor, uiState.strokeWidth, uiState.selectedTool) {
                     detectDragGestures(
                         onDragStart = { offset ->
@@ -166,7 +176,7 @@ fun DrawingEditorScreen(
                 uiState.strokes.forEach { stroke ->
                     stroke.points.zipWithNext { start, end ->
                         drawLine(
-                            color = if (stroke.isEraser) SurfaceMedium else Color(stroke.color),
+                            color = if (stroke.isEraser) surfaceVariantColor else Color(stroke.color),
                             start = Offset(start.x, start.y),
                             end = Offset(end.x, end.y),
                             strokeWidth = stroke.width,
@@ -177,7 +187,7 @@ fun DrawingEditorScreen(
 
                 currentStrokePoints.zipWithNext { start, end ->
                     drawLine(
-                        color = if (uiState.selectedTool == DrawingTool.Eraser) SurfaceMedium else Color(uiState.selectedColor),
+                        color = if (uiState.selectedTool == DrawingTool.Eraser) surfaceVariantColor else Color(uiState.selectedColor),
                         start = Offset(start.x, start.y),
                         end = Offset(end.x, end.y),
                         strokeWidth = uiState.strokeWidth,
@@ -186,7 +196,7 @@ fun DrawingEditorScreen(
                 }
 
                 drawRect(
-                    color = SurfaceHigh.copy(alpha = 0.2f),
+                    color = canvasBorderColor,
                     style = Stroke(width = 1.dp.toPx())
                 )
             }
@@ -201,7 +211,8 @@ private fun ColorPickerDialogDrawing(
     onColorSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val palette = listOf(0xFF6B5E2EL, 0xFF7A4A2BL, 0xFF6A3B3BL, 0xFF5A3F6EL,0xFF3F4F74L, 0xFF2F5D78L, 0xFF2F6F6DL, 0xFF3E6B3EL,0xFF5E6A2EL, 0xFF6B6B2EL, 0xFF5C4A3BL, 0xFF4E5B63L)
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val palette = if (isLightTheme) LightCardPalette else DarkCardPalette
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select drawing color") },
@@ -233,7 +244,7 @@ private fun DrawingBottomControls(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SurfaceMedium)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .navigationBarsPadding()
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)

@@ -9,11 +9,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val AUTO_SAVE_DEBOUNCE_MS = 500L
+private const val AUTO_SAVE_DEBOUNCE_MS = 2500L
 private const val IMAGE_LINE_PREFIX = "[[image:"
 private const val IMAGE_LINE_SUFFIX = "]]"
 private const val FONT_LINE_PREFIX = "[[font:"
@@ -46,7 +46,7 @@ class NoteEditorViewModel(
 
     init {
         if (initialNoteId != -1L) {
-            observeNote(initialNoteId)
+            loadInitialNote(initialNoteId)
         }
     }
 
@@ -96,26 +96,29 @@ class NoteEditorViewModel(
         scheduleSave()
     }
 
-    private fun observeNote(noteId: Long) {
+    private fun loadInitialNote(noteId: Long) {
         viewModelScope.launch {
-            noteRepository.observeById(noteId).collectLatest { note ->
-                if (note != null) {
-                    val (plainBody, images, fontFamily) = decodeNoteContent(note.content)
-                    _uiState.update {
-                        it.copy(
-                            noteId = note.id,
-                            title = note.title,
-                            body = plainBody,
-                            imageUris = images,
-                            createdAt = note.createdAt,
-                            lastEditedLabel = "Last edited just now",
-                            cardColor = note.cardColor,
-                            selectedFontFamily = fontFamily
-                        )
-                    }
-                }
+            val note = noteRepository.observeById(noteId).first() ?: return@launch
+            val (plainBody, images, fontFamily) = decodeNoteContent(note.content)
+            _uiState.update {
+                it.copy(
+                    noteId = note.id,
+                    title = note.title,
+                    body = plainBody,
+                    imageUris = images,
+                    createdAt = note.createdAt,
+                    lastEditedLabel = "Last edited just now",
+                    cardColor = note.cardColor,
+                    selectedFontFamily = fontFamily
+                )
             }
         }
+    }
+
+
+    suspend fun saveNow() {
+        saveJob?.cancel()
+        saveDraft()
     }
 
     private fun scheduleSave() {

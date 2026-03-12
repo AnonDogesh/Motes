@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -33,9 +34,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -66,6 +67,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -77,7 +82,13 @@ import com.example.motes.data.AppContainer
 import com.example.motes.navigation.AppRoute
 import com.example.motes.ui.components.FilterDialFab
 import com.example.motes.ui.components.SpeedDialFab
+import com.example.motes.ui.theme.Accent
+import com.example.motes.ui.theme.DarkBlueBase
 import com.example.motes.ui.theme.MotesTheme
+import com.example.motes.ui.theme.cardColorForDisplay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -99,6 +110,12 @@ fun HomeScreen(
     val selectionMode = uiMode as? UiMode.Selection
     val selectedKeys = selectionMode?.selectedKeys.orEmpty()
     val inSelectionMode = selectionMode != null
+    val defaultTitle = when (filter) {
+        HomeFilter.ALL -> "Motes"
+        HomeFilter.NOTE -> "Notes"
+        HomeFilter.CHECKLIST -> "Checklists"
+        HomeFilter.DRAWING -> "Drawings"
+    }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     BackHandler(enabled = inSelectionMode) {
@@ -110,8 +127,9 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (inSelectionMode) "${selectedKeys.size} selected" else "Motes",
-                        style = MaterialTheme.typography.titleLarge
+                        if (inSelectionMode) "${selectedKeys.size} selected" else defaultTitle,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = if (inSelectionMode) MaterialTheme.colorScheme.onSurface else Accent
                     )
                 },
                 actions = {
@@ -152,13 +170,13 @@ fun HomeScreen(
         }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
-            LazyVerticalGrid(
+            LazyVerticalStaggeredGrid(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                columns = GridCells.Adaptive(180.dp),
+                columns = StaggeredGridCells.Adaptive(180.dp),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalItemSpacing = 12.dp,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(items = items, key = { it.id }) { item ->
@@ -274,6 +292,9 @@ private fun HomeCard(
         targetValue = if (isPressed) 2.dp else if (isSelected) 10.dp else 8.dp,
         label = "home_card_elevation"
     )
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val cardTitleColor = if (isLightTheme) DarkBlueBase else Color.White
+    val cardSubColor = if (isLightTheme) DarkBlueBase.copy(alpha = 0.82f) else Color(0xFFEAEAEA)
 
     Card(
         modifier = Modifier
@@ -295,8 +316,8 @@ private fun HomeCard(
         colors = CardDefaults.cardColors(
             containerColor = when {
                 isSelected -> MaterialTheme.colorScheme.surfaceVariant
-                item.cardColor != null -> Color(item.cardColor)
-                else -> Color(0xFF455A64)
+                item.cardColor != null -> Color(cardColorForDisplay(item.cardColor, isLightTheme))
+                else -> MaterialTheme.colorScheme.surfaceVariant
             },
             contentColor = Color.White
         ),
@@ -325,6 +346,17 @@ private fun HomeCard(
                     )
                 }
 
+                if (item.type == HomeNoteType.DRAWING && item.previewDrawingPaths.isNotEmpty()) {
+                    DrawingPreview(
+                        strokePaths = item.previewDrawingPaths,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    )
+                }
+
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -332,12 +364,12 @@ private fun HomeCard(
                     Text(
                         text = item.title,
                         style = MaterialTheme.typography.titleLarge,
-                        color = Color.White
+                        color = cardTitleColor
                     )
                     Text(
                         text = item.subtitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFFEAEAEA)
+                        color = cardSubColor
                     )
                     Text(
                         text = when (item.type) {
@@ -346,30 +378,40 @@ private fun HomeCard(
                             HomeNoteType.DRAWING -> "Drawing"
                         },
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.White
+                        color = cardTitleColor
                     )
                     if (item.type == HomeNoteType.CHECKLIST) {
                         LinearProgressIndicator(
                             progress = { item.checklistProgress ?: 0f },
                             modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = Color(0xFF6D6D6D)
+                            color = if ((item.checklistProgress ?: 0f) >= 0.999f) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
                         )
                         Text(
                             text = item.checklistCompletionLabel ?: "0 checked • 0 left",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFEAEAEA)
+                            color = cardSubColor
                         )
                     }
                     if (item.isPinned) {
                         Text(
                             text = "Pinned",
                             style = MaterialTheme.typography.labelLarge,
-                            color = Color.White
+                            color = cardTitleColor
                         )
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
+
+            Text(
+                text = formatCardDate(item.lastSavedAt),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 12.dp, bottom = 10.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = cardSubColor
+            )
 
             if (isSelected) {
                 Box(
@@ -389,6 +431,79 @@ private fun HomeCard(
             }
         }
     }
+}
+
+
+private data class PreviewStroke(
+    val points: List<Offset>,
+    val color: Color,
+    val width: Float,
+    val isEraser: Boolean
+)
+
+@Composable
+private fun DrawingPreview(
+    strokePaths: List<String>,
+    modifier: Modifier = Modifier
+) {
+    val strokes = remember(strokePaths) { decodePreviewStrokes(strokePaths) }
+    Canvas(modifier = modifier) {
+        if (strokes.isEmpty()) return@Canvas
+
+        val allPoints = strokes.flatMap { it.points }
+        val minX = allPoints.minOf { it.x }
+        val maxX = allPoints.maxOf { it.x }
+        val minY = allPoints.minOf { it.y }
+        val maxY = allPoints.maxOf { it.y }
+        val sourceWidth = (maxX - minX).coerceAtLeast(1f)
+        val sourceHeight = (maxY - minY).coerceAtLeast(1f)
+        val scale = kotlin.math.min(size.width / sourceWidth, size.height / sourceHeight) * 0.9f
+        val dx = (size.width - sourceWidth * scale) / 2f
+        val dy = (size.height - sourceHeight * scale) / 2f
+
+        strokes.forEach { stroke ->
+            stroke.points.zipWithNext { start, end ->
+                val mappedStart = Offset((start.x - minX) * scale + dx, (start.y - minY) * scale + dy)
+                val mappedEnd = Offset((end.x - minX) * scale + dx, (end.y - minY) * scale + dy)
+                drawLine(
+                    color = if (stroke.isEraser) Color.Transparent else stroke.color,
+                    start = mappedStart,
+                    end = mappedEnd,
+                    strokeWidth = (stroke.width * scale).coerceIn(1.2f, 10f),
+                    cap = StrokeCap.Round
+                )
+            }
+        }
+
+        drawRect(
+            color = Color.White.copy(alpha = 0.08f),
+            style = Stroke(width = 1.dp.toPx())
+        )
+    }
+}
+
+private fun decodePreviewStrokes(paths: List<String>): List<PreviewStroke> =
+    paths.mapNotNull { encoded ->
+        val segments = encoded.split("|", limit = 4)
+        if (segments.size < 4) return@mapNotNull null
+        val color = segments[0].toLongOrNull()?.let { Color(it) } ?: return@mapNotNull null
+        val width = segments[1].toFloatOrNull() ?: return@mapNotNull null
+        val isEraser = segments[2].toBooleanStrictOrNull() ?: false
+        val points = segments[3]
+            .split(';')
+            .mapNotNull { pair ->
+                val xy = pair.split(',', limit = 2)
+                if (xy.size != 2) return@mapNotNull null
+                val x = xy[0].toFloatOrNull() ?: return@mapNotNull null
+                val y = xy[1].toFloatOrNull() ?: return@mapNotNull null
+                Offset(x, y)
+            }
+        if (points.size < 2) null else PreviewStroke(points = points, color = color, width = width, isEraser = isEraser)
+    }
+
+private fun formatCardDate(timestamp: Long): String {
+    val formatter = SimpleDateFormat("dd MMM", Locale.getDefault())
+    return formatter.format(Date(timestamp))
 }
 
 @Preview(showBackground = true, backgroundColor = 0xFF25343F)
