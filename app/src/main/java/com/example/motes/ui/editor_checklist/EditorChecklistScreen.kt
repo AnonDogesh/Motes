@@ -122,6 +122,7 @@ fun ChecklistEditorScreen(
                 },
                 actions = {
                     IconButton(onClick = {
+                        NotificationSettingsState.refreshFromSystem(context)
                         if (!NotificationSettingsState.enabled) {
                             reminderError = "Enable notifications in Settings to use reminders."
                             return@IconButton

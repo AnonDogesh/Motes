@@ -1,5 +1,15 @@
 package com.example.motes.ui.settings
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -62,10 +72,31 @@ import com.example.motes.ui.theme.ThemeMode
 fun SettingsScreen(navController: NavController) {
     var selectedTheme by remember { mutableStateOf(AppThemeState.mode.name.lowercase().replaceFirstChar { it.uppercase() }) }
     var compactLayout by remember { mutableStateOf(false) }
-    var notificationsEnabled by remember { mutableStateOf(NotificationSettingsState.enabled) }
     var accountName by remember { mutableStateOf("Unknown") }
     var draftAccountName by remember { mutableStateOf(accountName) }
     var showRenameDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        NotificationSettingsState.onPermissionResult(context, granted)
+    }
+
+    LaunchedEffect(Unit) {
+        NotificationSettingsState.initialize(context)
+        NotificationSettingsState.refreshFromSystem(context)
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                NotificationSettingsState.refreshFromSystem(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val colorScheme = MaterialTheme.colorScheme
     val screenBackground = colorScheme.background
     val accent = colorScheme.primary
@@ -211,7 +242,17 @@ fun SettingsScreen(navController: NavController) {
                         Text("Push Notifications", color = mainText, style = MaterialTheme.typography.titleMedium)
                         Text("Daily summaries and reminders", color = mutedText, style = MaterialTheme.typography.bodySmall)
                     }
-                    Switch(checked = notificationsEnabled, onCheckedChange = { notificationsEnabled = it; NotificationSettingsState.enabled = it })
+                    Switch(checked = NotificationSettingsState.enabled, onCheckedChange = { desired ->
+                        NotificationSettingsState.setEnabled(
+                            context = context,
+                            desired = desired,
+                            onRequestPermission = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            }
+                        )
+                    })
                 }
             }
 

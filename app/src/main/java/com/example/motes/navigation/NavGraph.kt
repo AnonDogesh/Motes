@@ -35,6 +35,7 @@ import com.example.motes.ui.editor_checklist.ChecklistEditorScreen
 import com.example.motes.ui.editor_drawing.DrawingEditorScreen
 import com.example.motes.ui.editor_note.NoteEditorScreen
 import com.example.motes.ui.home.HomeScreen
+import com.example.motes.ui.settings.NotificationSettingsState
 import com.example.motes.ui.settings.SettingsScreen
 import com.example.motes.ui.theme.MotesTheme
 
@@ -77,11 +78,14 @@ fun MotesApp() {
     val navController = rememberNavController()
     val context = LocalContext.current
     var showPermissionFlash by remember { mutableStateOf(false) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        NotificationSettingsState.onPermissionResult(context, granted)
         showPermissionFlash = false
     }
 
     LaunchedEffect(Unit) {
+        NotificationSettingsState.initialize(context)
+        NotificationSettingsState.refreshFromSystem(context)
         val prefs = context.getSharedPreferences("motes_prefs", Context.MODE_PRIVATE)
         val asked = prefs.getBoolean("notification_permission_asked", false)
         if (!asked && !hasNotificationPermission(context)) {

@@ -58,7 +58,7 @@ fun SpeedDialFab(
     )
     val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
     val menuContainerColor = if (isLightTheme) MaterialTheme.colorScheme.surface else Color(0xFF4A6270)
-    val menuContentColor = if (isLightTheme) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimary
+    val menuContentColor = if (isLightTheme) MaterialTheme.colorScheme.onSurface else Color.White
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = expanded,
