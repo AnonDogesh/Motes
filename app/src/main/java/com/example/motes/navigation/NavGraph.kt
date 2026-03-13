@@ -77,7 +77,8 @@ private fun ReminderPermissionFlash(
                     painter = painterResource(id = R.drawable.flash_card),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.TopCenter
                 )
 
                 Box(
