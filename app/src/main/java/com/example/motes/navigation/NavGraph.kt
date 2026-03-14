@@ -6,31 +6,36 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -48,10 +53,42 @@ import com.example.motes.ui.home.HomeScreen
 import com.example.motes.ui.settings.NotificationSettingsState
 import com.example.motes.ui.settings.SettingsScreen
 import com.example.motes.ui.theme.MotesTheme
+import kotlinx.coroutines.delay
 
 private fun hasNotificationPermission(context: Context): Boolean {
     return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+}
+
+@Composable
+private fun LaunchSplash(onFinished: () -> Unit) {
+    var startAnimation by remember { mutableStateOf(false) }
+    val logoScale by animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0.72f,
+        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        label = "launch_logo_scale"
+    )
+
+    LaunchedEffect(Unit) {
+        startAnimation = true
+        delay(1000)
+        onFinished()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF2A374A)),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.app_logo),
+            contentDescription = null,
+            modifier = Modifier
+                .size(160.dp)
+                .scale(logoScale)
+        )
+    }
 }
 
 @Composable
@@ -119,12 +156,12 @@ private fun ReminderPermissionFlash(
     }
 }
 
-
 @Composable
 fun MotesApp() {
     val navController = rememberNavController()
     val context = LocalContext.current
     var showPermissionFlash by remember { mutableStateOf(false) }
+    var showLaunchSplash by remember { mutableStateOf(true) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         NotificationSettingsState.onPermissionResult(context, granted)
         showPermissionFlash = false
@@ -148,47 +185,47 @@ fun MotesApp() {
                     navController = navController,
                     startDestination = AppRoute.Home.route
                 ) {
-                composable(AppRoute.Home.route) {
-                    HomeScreen(navController = navController)
-                }
+                    composable(AppRoute.Home.route) {
+                        HomeScreen(navController = navController)
+                    }
 
-                composable(AppRoute.Archive.route) {
-                    ArchiveScreen(navController = navController)
-                }
+                    composable(AppRoute.Archive.route) {
+                        ArchiveScreen(navController = navController)
+                    }
 
-                composable(AppRoute.Settings.route) {
-                    SettingsScreen(navController = navController)
-                }
+                    composable(AppRoute.Settings.route) {
+                        SettingsScreen(navController = navController)
+                    }
 
-                composable(
-                    route = AppRoute.NoteEditor.ROUTE,
-                    arguments = AppRoute.NoteEditor.arguments
-                ) { backStackEntry ->
-                    NoteEditorScreen(
-                        navController = navController,
-                        backStackEntry = backStackEntry
-                    )
-                }
+                    composable(
+                        route = AppRoute.NoteEditor.ROUTE,
+                        arguments = AppRoute.NoteEditor.arguments
+                    ) { backStackEntry ->
+                        NoteEditorScreen(
+                            navController = navController,
+                            backStackEntry = backStackEntry
+                        )
+                    }
 
-                composable(
-                    route = AppRoute.ChecklistEditor.ROUTE,
-                    arguments = AppRoute.ChecklistEditor.arguments
-                ) { backStackEntry ->
-                    ChecklistEditorScreen(
-                        navController = navController,
-                        backStackEntry = backStackEntry
-                    )
-                }
+                    composable(
+                        route = AppRoute.ChecklistEditor.ROUTE,
+                        arguments = AppRoute.ChecklistEditor.arguments
+                    ) { backStackEntry ->
+                        ChecklistEditorScreen(
+                            navController = navController,
+                            backStackEntry = backStackEntry
+                        )
+                    }
 
-                composable(
-                    route = AppRoute.DrawingEditor.ROUTE,
-                    arguments = AppRoute.DrawingEditor.arguments
-                ) { backStackEntry ->
-                    DrawingEditorScreen(
-                        navController = navController,
-                        backStackEntry = backStackEntry
-                    )
-                }
+                    composable(
+                        route = AppRoute.DrawingEditor.ROUTE,
+                        arguments = AppRoute.DrawingEditor.arguments
+                    ) { backStackEntry ->
+                        DrawingEditorScreen(
+                            navController = navController,
+                            backStackEntry = backStackEntry
+                        )
+                    }
                 }
 
                 if (showPermissionFlash) {
@@ -197,6 +234,10 @@ fun MotesApp() {
                             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
                     )
+                }
+
+                if (showLaunchSplash) {
+                    LaunchSplash(onFinished = { showLaunchSplash = false })
                 }
             }
         }

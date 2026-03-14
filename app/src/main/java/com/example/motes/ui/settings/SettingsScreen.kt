@@ -41,11 +41,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BorderStroke
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -75,6 +79,7 @@ fun SettingsScreen(navController: NavController) {
     var accountName by remember { mutableStateOf("Unknown") }
     var draftAccountName by remember { mutableStateOf(accountName) }
     var showRenameDialog by remember { mutableStateOf(false) }
+    var showCustomThemesMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -175,10 +180,37 @@ fun SettingsScreen(navController: NavController) {
             SectionTitle("APPEARANCE")
             SettingsCard {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Icon(Icons.Default.Palette, contentDescription = null, tint = mutedText)
                         Spacer(Modifier.width(8.dp))
                         Text("Theme", color = mainText, style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Box {
+                            OutlinedButton(
+                                onClick = { showCustomThemesMenu = true },
+                                border = BorderStroke(1.5.dp, accent),
+                                shape = RoundedCornerShape(50),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Custom",
+                                    color = accent,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showCustomThemesMenu,
+                                onDismissRequest = { showCustomThemesMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("No custom themes yet") },
+                                    onClick = { showCustomThemesMenu = false }
+                                )
+                            }
+                        }
                     }
 
                     Row(
