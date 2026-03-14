@@ -7,7 +7,9 @@ import androidx.compose.runtime.setValue
 enum class ThemeMode {
     LIGHT,
     DARK,
-    SYSTEM
+    SYSTEM,
+    PEACH,
+    SEA
 }
 
 object AppThemeState {
