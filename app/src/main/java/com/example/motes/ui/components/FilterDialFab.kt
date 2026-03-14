@@ -33,11 +33,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.example.motes.ui.home.HomeFilter
-import com.example.motes.ui.theme.Accent
+import com.example.motes.ui.theme.usesLightCardPalette
 
 @Composable
 fun FilterDialFab(
@@ -55,9 +53,9 @@ fun FilterDialFab(
         animationSpec = spring(dampingRatio = 0.85f),
         label = "filter_dial_main_scale"
     )
-    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
-    val menuContainerColor = if (isLightTheme) MaterialTheme.colorScheme.surface else Color(0xFF4A6270)
-    val menuContentColor = if (isLightTheme) MaterialTheme.colorScheme.onSurface else Color.White
+    val isLightTheme = usesLightCardPalette()
+    val menuContainerColor = if (isLightTheme) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant
+    val menuContentColor = MaterialTheme.colorScheme.onSurface
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
             Box(
@@ -143,7 +141,7 @@ fun FilterDialFab(
 
             FloatingActionButton(
                 onClick = { expanded = !expanded },
-                containerColor = Accent,
+                containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.scale(mainFabScale),
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)

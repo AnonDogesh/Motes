@@ -66,7 +66,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
@@ -78,10 +77,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
-import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.DarkCardPalette
 import com.example.motes.ui.theme.LightCardPalette
 import com.example.motes.ui.theme.cardColorForDisplay
+import com.example.motes.ui.theme.usesLightCardPalette
 import com.example.motes.ui.theme.cardColorForStorage
 import kotlinx.coroutines.launch
 import java.io.File
@@ -107,7 +106,7 @@ fun NoteEditorScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val isLightTheme = usesLightCardPalette()
     val displayedCardColor = uiState.cardColor?.let { cardColorForDisplay(it, isLightTheme) }
     val bodyTextColor = MaterialTheme.colorScheme.onSurface.toArgb()
     val hintTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f).toArgb()
@@ -257,7 +256,7 @@ fun NoteEditorScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.SemiBold
                 ),
-                cursorBrush = SolidColor(Accent),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 decorationBox = { innerTextField ->
                     if (uiState.title.isBlank()) {
                         Text("Title", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
@@ -421,7 +420,7 @@ private fun NoteFormattingToolbar(
         Spacer(modifier = Modifier.weight(1f))
         FloatingActionButton(
             onClick = onAddImage,
-            containerColor = Accent,
+            containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.size(42.dp),
             shape = CircleShape
@@ -479,7 +478,7 @@ private fun ColorPickerDialog(
     onColorSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val isLightTheme = usesLightCardPalette()
     val palette = if (isLightTheme) LightCardPalette else DarkCardPalette
 
     AlertDialog(

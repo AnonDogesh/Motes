@@ -38,27 +38,35 @@ private val MotesPeachColorScheme = lightColorScheme(
     onPrimary = DarkBlueBase,
     background = PeachBackground,
     onBackground = DarkBlueBase,
-    surface = PeachBackground.copy(alpha = 0.84f),
+    surface = Color(0xFFFFF6E7),
     onSurface = DarkBlueBase,
-    surfaceVariant = PeachBackground.copy(alpha = 0.72f),
-    onSurfaceVariant = DarkBlueBase.copy(alpha = 0.72f),
-    outline = PeachAccent.copy(alpha = 0.45f),
-    tertiary = PeachBackground.copy(alpha = 0.90f)
+    surfaceVariant = Color(0xFFF7DFC0),
+    onSurfaceVariant = DarkBlueBase.copy(alpha = 0.74f),
+    outline = PeachAccent.copy(alpha = 0.35f),
+    tertiary = Color(0xFFFFF1DB)
 )
 
 private val MotesSeaColorScheme = lightColorScheme(
     primary = SeaAccent,
     onPrimary = Color.White,
-    background = SeaBackground,
+    background = Color(0xFFE7F3F4),
     onBackground = DarkBlueBase,
-    surface = SeaBackground.copy(alpha = 0.84f),
+    surface = Color(0xFFF4FBFB),
     onSurface = DarkBlueBase,
-    surfaceVariant = SeaBackground.copy(alpha = 0.72f),
-    onSurfaceVariant = DarkBlueBase.copy(alpha = 0.72f),
-    outline = SeaAccent.copy(alpha = 0.45f),
-    tertiary = SeaBackground.copy(alpha = 0.90f)
+    surfaceVariant = Color(0xFFD5EAEC),
+    onSurfaceVariant = DarkBlueBase.copy(alpha = 0.74f),
+    outline = SeaAccent.copy(alpha = 0.32f),
+    tertiary = Color(0xFFEAF6F7)
 )
 
+@Composable
+fun usesLightCardPalette(): Boolean {
+    return when (AppThemeState.mode) {
+        ThemeMode.DARK -> false
+        ThemeMode.SYSTEM -> !isSystemInDarkTheme()
+        ThemeMode.LIGHT, ThemeMode.PEACH, ThemeMode.SEA -> true
+    }
+}
 
 @Composable
 fun MotesTheme(

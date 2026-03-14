@@ -69,7 +69,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
@@ -82,9 +81,9 @@ import com.example.motes.data.AppContainer
 import com.example.motes.navigation.AppRoute
 import com.example.motes.ui.components.FilterDialFab
 import com.example.motes.ui.components.SpeedDialFab
-import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.DarkBlueBase
 import com.example.motes.ui.theme.MotesTheme
+import com.example.motes.ui.theme.usesLightCardPalette
 import com.example.motes.ui.theme.cardColorForDisplay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -129,7 +128,7 @@ fun HomeScreen(
                     Text(
                         if (inSelectionMode) "${selectedKeys.size} selected" else defaultTitle,
                         style = MaterialTheme.typography.titleLarge,
-                        color = if (inSelectionMode) MaterialTheme.colorScheme.onSurface else Accent
+                        color = if (inSelectionMode) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary
                     )
                 },
                 actions = {
@@ -292,7 +291,7 @@ private fun HomeCard(
         targetValue = if (isPressed) 2.dp else if (isSelected) 10.dp else 8.dp,
         label = "home_card_elevation"
     )
-    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val isLightTheme = usesLightCardPalette()
     val cardTitleColor = if (isLightTheme) DarkBlueBase else Color.White
     val cardSubColor = if (isLightTheme) DarkBlueBase.copy(alpha = 0.82f) else Color(0xFFEAEAEA)
 
@@ -317,7 +316,7 @@ private fun HomeCard(
             containerColor = when {
                 isSelected -> MaterialTheme.colorScheme.surfaceVariant
                 item.cardColor != null -> Color(cardColorForDisplay(item.cardColor, isLightTheme))
-                else -> MaterialTheme.colorScheme.surfaceVariant
+                else -> MaterialTheme.colorScheme.surface
             },
             contentColor = Color.White
         ),

@@ -44,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -57,10 +56,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import com.example.motes.data.AppContainer
-import com.example.motes.ui.theme.Accent
 import com.example.motes.ui.theme.DarkCardPalette
 import com.example.motes.ui.theme.LightCardPalette
 import com.example.motes.ui.theme.cardColorForDisplay
+import com.example.motes.ui.theme.usesLightCardPalette
 import com.example.motes.ui.theme.cardColorForStorage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,7 +82,7 @@ fun DrawingEditorScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val isLightTheme = usesLightCardPalette()
     val displayedCardColor = uiState.cardColor?.let { cardColorForDisplay(it, isLightTheme) }
     val currentStrokePoints = remember { mutableStateListOf<DrawPoint>() }
     var showColorPicker by remember { mutableStateOf(false) }
@@ -100,7 +99,7 @@ fun DrawingEditorScreen(
                             value = uiState.title,
                             onValueChange = viewModel::setTitle,
                             textStyle = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                            cursorBrush = SolidColor(Accent),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                             decorationBox = { inner ->
                                 if (uiState.title.isBlank()) {
                                     Text("Drawing", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -211,7 +210,7 @@ private fun ColorPickerDialogDrawing(
     onColorSelected: (Long?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
+    val isLightTheme = usesLightCardPalette()
     val palette = if (isLightTheme) LightCardPalette else DarkCardPalette
     AlertDialog(
         onDismissRequest = onDismiss,
