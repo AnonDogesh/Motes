@@ -151,6 +151,7 @@ fun DrawingCard(
             color = MaterialTheme.colorScheme.onSurface
         )
 
+        val previewStrokeColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -160,11 +161,10 @@ fun DrawingCard(
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.fillMaxSize().padding(10.dp)) {
-                val strokeColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                drawLine(strokeColor, start = androidx.compose.ui.geometry.Offset(0f, size.height * 0.65f), end = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.35f), strokeWidth = 5f)
-                drawLine(strokeColor, start = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.35f), end = androidx.compose.ui.geometry.Offset(size.width * 0.72f, size.height * 0.58f), strokeWidth = 5f)
+                drawLine(previewStrokeColor, start = androidx.compose.ui.geometry.Offset(0f, size.height * 0.65f), end = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.35f), strokeWidth = 5f)
+                drawLine(previewStrokeColor, start = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.35f), end = androidx.compose.ui.geometry.Offset(size.width * 0.72f, size.height * 0.58f), strokeWidth = 5f)
                 drawCircle(
-                    color = strokeColor,
+                    color = previewStrokeColor,
                     radius = size.minDimension * 0.18f,
                     center = androidx.compose.ui.geometry.Offset(size.width * 0.84f, size.height * 0.28f),
                     style = Stroke(width = 4f)
