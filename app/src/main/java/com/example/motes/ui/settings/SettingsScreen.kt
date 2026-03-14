@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
@@ -229,7 +228,8 @@ fun SettingsScreen(navController: NavController) {
                                                         AppThemeState.mode = ThemeMode.PEACH
                                                         showCustomThemesMenu = false
                                                     },
-                                                    accent = accent
+                                                    accent = accent,
+                                                    modifier = Modifier.weight(1f)
                                                 )
                                                 CustomThemeOption(
                                                     name = "Sea",
@@ -240,7 +240,8 @@ fun SettingsScreen(navController: NavController) {
                                                         AppThemeState.mode = ThemeMode.SEA
                                                         showCustomThemesMenu = false
                                                     },
-                                                    accent = accent
+                                                    accent = accent,
+                                                    modifier = Modifier.weight(1f)
                                                 )
                                             }
                                         }
@@ -429,11 +430,11 @@ private fun CustomThemeOption(
     swatch: Color,
     selected: Boolean,
     onSelect: () -> Unit,
-    accent: Color
+    accent: Color,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
-            .weight(1f)
+        modifier = modifier
             .clickable(onClick = onSelect),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
