@@ -89,6 +89,8 @@ fun SettingsScreen(navController: NavController) {
     }
 
     LaunchedEffect(Unit) {
+        AppThemeState.initialize(context)
+        selectedTheme = AppThemeState.mode
         NotificationSettingsState.initialize(context)
         NotificationSettingsState.refreshFromSystem(context)
     }
@@ -225,7 +227,7 @@ fun SettingsScreen(navController: NavController) {
                                                     selected = selectedTheme == ThemeMode.PEACH,
                                                     onSelect = {
                                                         selectedTheme = ThemeMode.PEACH
-                                                        AppThemeState.mode = ThemeMode.PEACH
+                                                        AppThemeState.setMode(context, ThemeMode.PEACH)
                                                         showCustomThemesMenu = false
                                                     },
                                                     accent = accent,
@@ -237,7 +239,7 @@ fun SettingsScreen(navController: NavController) {
                                                     selected = selectedTheme == ThemeMode.SEA,
                                                     onSelect = {
                                                         selectedTheme = ThemeMode.SEA
-                                                        AppThemeState.mode = ThemeMode.SEA
+                                                        AppThemeState.setMode(context, ThemeMode.SEA)
                                                         showCustomThemesMenu = false
                                                     },
                                                     accent = accent,
@@ -262,21 +264,21 @@ fun SettingsScreen(navController: NavController) {
                             modifier = Modifier.weight(1f),
                             mainText = mainText,
                             accent = accent,
-                        ) { selectedTheme = ThemeMode.LIGHT; AppThemeState.mode = ThemeMode.LIGHT }
+                        ) { selectedTheme = ThemeMode.LIGHT; AppThemeState.setMode(context, ThemeMode.LIGHT) }
                         ThemeOption(
                             label = "Dark",
                             selected = selectedTheme == ThemeMode.DARK,
                             modifier = Modifier.weight(1f),
                             mainText = mainText,
                             accent = accent,
-                        ) { selectedTheme = ThemeMode.DARK; AppThemeState.mode = ThemeMode.DARK }
+                        ) { selectedTheme = ThemeMode.DARK; AppThemeState.setMode(context, ThemeMode.DARK) }
                         ThemeOption(
                             label = "System",
                             selected = selectedTheme == ThemeMode.SYSTEM,
                             modifier = Modifier.weight(1f),
                             mainText = mainText,
                             accent = accent,
-                        ) { selectedTheme = ThemeMode.SYSTEM; AppThemeState.mode = ThemeMode.SYSTEM }
+                        ) { selectedTheme = ThemeMode.SYSTEM; AppThemeState.setMode(context, ThemeMode.SYSTEM) }
                     }
 
                     HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.45f))

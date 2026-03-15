@@ -52,6 +52,7 @@ import com.example.motes.ui.editor_note.NoteEditorScreen
 import com.example.motes.ui.home.HomeScreen
 import com.example.motes.ui.settings.NotificationSettingsState
 import com.example.motes.ui.settings.SettingsScreen
+import com.example.motes.ui.theme.AppThemeState
 import com.example.motes.ui.theme.MotesTheme
 import kotlinx.coroutines.delay
 
@@ -168,6 +169,7 @@ fun MotesApp() {
     }
 
     LaunchedEffect(Unit) {
+        AppThemeState.initialize(context)
         NotificationSettingsState.initialize(context)
         NotificationSettingsState.refreshFromSystem(context)
         val prefs = context.getSharedPreferences("motes_prefs", Context.MODE_PRIVATE)
