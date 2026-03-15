@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,11 +42,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.window.Popup
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -70,11 +74,12 @@ import com.example.motes.ui.theme.ThemeMode
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(navController: NavController) {
-    var selectedTheme by remember { mutableStateOf(AppThemeState.mode.name.lowercase().replaceFirstChar { it.uppercase() }) }
+    var selectedTheme by remember { mutableStateOf(AppThemeState.mode) }
     var compactLayout by remember { mutableStateOf(false) }
     var accountName by remember { mutableStateOf("Unknown") }
     var draftAccountName by remember { mutableStateOf(accountName) }
     var showRenameDialog by remember { mutableStateOf(false) }
+    var showCustomThemesMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -84,6 +89,8 @@ fun SettingsScreen(navController: NavController) {
     }
 
     LaunchedEffect(Unit) {
+        AppThemeState.initialize(context)
+        selectedTheme = AppThemeState.mode
         NotificationSettingsState.initialize(context)
         NotificationSettingsState.refreshFromSystem(context)
     }
@@ -175,10 +182,75 @@ fun SettingsScreen(navController: NavController) {
             SectionTitle("APPEARANCE")
             SettingsCard {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Icon(Icons.Default.Palette, contentDescription = null, tint = mutedText)
                         Spacer(Modifier.width(8.dp))
                         Text("Theme", color = mainText, style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Box {
+                            OutlinedButton(
+                                onClick = { showCustomThemesMenu = !showCustomThemesMenu },
+                                border = BorderStroke(1.5.dp, accent),
+                                shape = RoundedCornerShape(50),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Custom",
+                                    color = accent,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+
+                            if (showCustomThemesMenu) {
+                                Popup(alignment = Alignment.TopEnd, onDismissRequest = { showCustomThemesMenu = false }) {
+                                    Card(
+                                        modifier = Modifier
+                                            .padding(top = 44.dp)
+                                            .width(220.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                        border = BorderStroke(1.dp, accent.copy(alpha = 0.35f))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Text("Custom themes", color = mainText, style = MaterialTheme.typography.labelLarge)
+
+                                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                                CustomThemeOption(
+                                                    name = "Peach",
+                                                    swatch = Color(0xFFFD7979),
+                                                    selected = selectedTheme == ThemeMode.PEACH,
+                                                    onSelect = {
+                                                        selectedTheme = ThemeMode.PEACH
+                                                        AppThemeState.setMode(context, ThemeMode.PEACH)
+                                                        showCustomThemesMenu = false
+                                                    },
+                                                    accent = accent,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                CustomThemeOption(
+                                                    name = "Sea",
+                                                    swatch = Color(0xFF016B61),
+                                                    selected = selectedTheme == ThemeMode.SEA,
+                                                    onSelect = {
+                                                        selectedTheme = ThemeMode.SEA
+                                                        AppThemeState.setMode(context, ThemeMode.SEA)
+                                                        showCustomThemesMenu = false
+                                                    },
+                                                    accent = accent,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     Row(
@@ -188,25 +260,25 @@ fun SettingsScreen(navController: NavController) {
                     ) {
                         ThemeOption(
                             label = "Light",
-                            selected = selectedTheme == "Light",
+                            selected = selectedTheme == ThemeMode.LIGHT,
                             modifier = Modifier.weight(1f),
                             mainText = mainText,
                             accent = accent,
-                        ) { selectedTheme = "Light"; AppThemeState.mode = ThemeMode.LIGHT }
+                        ) { selectedTheme = ThemeMode.LIGHT; AppThemeState.setMode(context, ThemeMode.LIGHT) }
                         ThemeOption(
                             label = "Dark",
-                            selected = selectedTheme == "Dark",
+                            selected = selectedTheme == ThemeMode.DARK,
                             modifier = Modifier.weight(1f),
                             mainText = mainText,
                             accent = accent,
-                        ) { selectedTheme = "Dark"; AppThemeState.mode = ThemeMode.DARK }
+                        ) { selectedTheme = ThemeMode.DARK; AppThemeState.setMode(context, ThemeMode.DARK) }
                         ThemeOption(
                             label = "System",
-                            selected = selectedTheme == "System",
+                            selected = selectedTheme == ThemeMode.SYSTEM,
                             modifier = Modifier.weight(1f),
                             mainText = mainText,
                             accent = accent,
-                        ) { selectedTheme = "System"; AppThemeState.mode = ThemeMode.SYSTEM }
+                        ) { selectedTheme = ThemeMode.SYSTEM; AppThemeState.setMode(context, ThemeMode.SYSTEM) }
                     }
 
                     HorizontalDivider(color = colorScheme.outline.copy(alpha = 0.45f))
@@ -325,7 +397,7 @@ private fun ThemeOption(
         colors = CardDefaults.cardColors(
             containerColor = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant
         ),
-        border = if (selected) androidx.compose.foundation.BorderStroke(2.dp, accent) else null
+        border = if (selected) BorderStroke(2.dp, accent) else null
     ) {
         Column(
             modifier = Modifier
@@ -351,6 +423,42 @@ private fun ThemeOption(
     }
 }
 
+
+
+
+@Composable
+private fun CustomThemeOption(
+    name: String,
+    swatch: Color,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .clickable(onClick = onSelect),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = if (selected) BorderStroke(1.5.dp, accent) else null
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(swatch, CircleShape)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(name, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
 
 @Composable
 private fun RenameAccountDialog(

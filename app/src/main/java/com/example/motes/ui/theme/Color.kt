@@ -12,6 +12,11 @@ val LightBackground = Color(0xFFE0CFB0)
 val LightSurface = Color(0xFFF5EEDC)
 val LightSurfaceVariant = Color(0xFFFBF4E6)
 
+val PeachBackground = Color(0xFFFEEAC9)
+val PeachAccent = Color(0xFFFD7979)
+val SeaBackground = Color(0xFF9ECFD4)
+val SeaAccent = Color(0xFF016B61)
+
 /**
  * App design-system tokens.
  *

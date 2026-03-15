@@ -36,11 +36,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
-import com.example.motes.ui.theme.Accent
+import com.example.motes.ui.theme.usesLightCardPalette
 
 @Composable
 fun SpeedDialFab(
@@ -56,9 +54,9 @@ fun SpeedDialFab(
         animationSpec = spring(dampingRatio = 0.8f),
         label = "speed_dial_main_rotation"
     )
-    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.6f
-    val menuContainerColor = if (isLightTheme) MaterialTheme.colorScheme.surface else Color(0xFF4A6270)
-    val menuContentColor = if (isLightTheme) MaterialTheme.colorScheme.onSurface else Color.White
+    val isLightTheme = usesLightCardPalette()
+    val menuContainerColor = if (isLightTheme) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant
+    val menuContentColor = MaterialTheme.colorScheme.onSurface
     Box(modifier = modifier.fillMaxSize()) {
         AnimatedVisibility(
             visible = expanded,
@@ -136,7 +134,7 @@ fun SpeedDialFab(
 
             FloatingActionButton(
                 onClick = { expanded = !expanded },
-                containerColor = Accent,
+                containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape,
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)

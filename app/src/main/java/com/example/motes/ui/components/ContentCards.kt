@@ -35,10 +35,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.motes.ui.theme.Accent
-import com.example.motes.ui.theme.BorderSubtle
-import com.example.motes.ui.theme.SurfaceMedium
-import com.example.motes.ui.theme.SurfaceHigh
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -116,7 +112,7 @@ fun ChecklistCard(
             Text(
                 text = completionLabel,
                 style = MaterialTheme.typography.labelLarge,
-                color = if (selected) Accent else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -126,8 +122,8 @@ fun ChecklistCard(
                 .fillMaxWidth()
                 .height(8.dp)
                 .clip(RoundedCornerShape(10.dp)),
-            color = Accent,
-            trackColor = SurfaceHigh
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)
         )
     }
 }
@@ -155,20 +151,20 @@ fun DrawingCard(
             color = MaterialTheme.colorScheme.onSurface
         )
 
+        val previewStrokeColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(92.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(SurfaceHigh),
+                .background(MaterialTheme.colorScheme.tertiary),
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.fillMaxSize().padding(10.dp)) {
-                val strokeColor = Color(0x99FFFFFF)
-                drawLine(strokeColor, start = androidx.compose.ui.geometry.Offset(0f, size.height * 0.65f), end = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.35f), strokeWidth = 5f)
-                drawLine(strokeColor, start = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.35f), end = androidx.compose.ui.geometry.Offset(size.width * 0.72f, size.height * 0.58f), strokeWidth = 5f)
+                drawLine(previewStrokeColor, start = androidx.compose.ui.geometry.Offset(0f, size.height * 0.65f), end = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.35f), strokeWidth = 5f)
+                drawLine(previewStrokeColor, start = androidx.compose.ui.geometry.Offset(size.width * 0.35f, size.height * 0.35f), end = androidx.compose.ui.geometry.Offset(size.width * 0.72f, size.height * 0.58f), strokeWidth = 5f)
                 drawCircle(
-                    color = strokeColor,
+                    color = previewStrokeColor,
                     radius = size.minDimension * 0.18f,
                     center = androidx.compose.ui.geometry.Offset(size.width * 0.84f, size.height * 0.28f),
                     style = Stroke(width = 4f)
@@ -191,7 +187,7 @@ private fun PremiumCardContainer(
     val pressed by interactionSource.collectIsPressedAsState()
 
     val borderColor by animateColorAsState(
-        targetValue = if (selected) Accent else BorderSubtle,
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
         label = "card_border_color"
     )
     val elevation by animateDpAsState(
@@ -224,7 +220,7 @@ private fun PremiumCardContainer(
                 onLongClick = onLongPress
             ),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceMedium),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Column(
